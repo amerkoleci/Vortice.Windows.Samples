@@ -25,6 +25,7 @@
     <RepositoryUrl>https://github.com/amerkoleci/vortice</RepositoryUrl>
     <ProjectUrl>https://github.com/amerkoleci/vortice</ProjectUrl>
     <PackageTags>dotnet net netcore netstandard csharp library graphics shader hlsl gamedev compute gpu</PackageTags>
+    <VorticeWindowsVersion>1.9.143</VorticeWindowsVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition=" $(TargetFramework.StartsWith('net5.0-windows')) or $(TargetFramework.StartsWith('net6.0-windows')) ">
