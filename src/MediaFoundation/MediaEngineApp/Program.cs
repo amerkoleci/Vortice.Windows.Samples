@@ -6,7 +6,7 @@ static class Program
     static void Main(string[] args)
     {
         // Initialize MediaFoundation
-        MFStartup(false);
+        MFStartup();
 
 
         MFShutdown();

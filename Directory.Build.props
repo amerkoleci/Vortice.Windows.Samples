@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <VorticeWindowsVersion>2.1.0-beta6</VorticeWindowsVersion>
+    <VorticeWindowsVersion>2.1.0-beta7</VorticeWindowsVersion>
   </PropertyGroup>
 
 </Project>

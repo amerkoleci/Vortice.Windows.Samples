@@ -1,12 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="MSBuild.Sdk.Extras/3.0.38">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0</TargetFrameworks>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>netstandard2.0;uap10.0.19041</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Toolkit.Diagnostics" Version="7.1.0-rc1" />
+    <PackageReference Include="Microsoft.Toolkit.Diagnostics" Version="7.1.2" />
   </ItemGroup>
 
 </Project>
