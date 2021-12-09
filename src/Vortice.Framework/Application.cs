@@ -7,13 +7,20 @@ namespace Vortice.Framework
 {
     public abstract class Application : IDisposable
     {
+        private readonly AppPlatform _platform;
+
         public event EventHandler<EventArgs>? Disposed;
 
-        public bool IsDisposed { get; private set; }
 
         protected Application()
         {
+            _platform = AppPlatform.Create(this);
+            //_platform.Activated += GamePlatform_Activated;
+            //_platform.Deactivated += GamePlatform_Deactivated;
         }
+
+        public bool IsDisposed { get; private set; }
+        public Window MainWindow => _platform.MainWindow;
 
         ~Application()
         {

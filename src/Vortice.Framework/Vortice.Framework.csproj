@@ -5,6 +5,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Platform\**\*.*" />
+    <EmbeddedResource Remove="Platform\**\*.*" />
+
+    <!-- Workaround so the files appear in VS -->
+    <None Include="Platform\**\*.*" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or $(TargetFramework.StartsWith('net6.0-windows')) ">
+    <Compile Include="Platform\Windows\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" $(TargetFramework.StartsWith('uap10.0')) ">
+    <Compile Include="Platform\UWP\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Toolkit.Diagnostics" Version="7.1.2" />
   </ItemGroup>
 

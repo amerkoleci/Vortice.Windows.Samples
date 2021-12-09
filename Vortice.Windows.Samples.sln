@@ -23,6 +23,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{E74A3E26
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Direct3D12", "Direct3D12", "{29DE9A3A-B79D-4B1B-933A-EEB3871A286F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloWindow", "src\Direct3D12\HelloWindow\HelloWindow.csproj", "{A5BE1AB8-9E5B-4B95-B89E-4E449590B723}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +45,10 @@ Global
 		{99FCA93E-67D4-4835-9AF9-97BF5606B221}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{99FCA93E-67D4-4835-9AF9-97BF5606B221}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{99FCA93E-67D4-4835-9AF9-97BF5606B221}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5BE1AB8-9E5B-4B95-B89E-4E449590B723}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5BE1AB8-9E5B-4B95-B89E-4E449590B723}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5BE1AB8-9E5B-4B95-B89E-4E449590B723}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5BE1AB8-9E5B-4B95-B89E-4E449590B723}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -48,6 +56,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{8A7C9B3D-56B5-4EE7-896D-5FBCC3034745} = {CEC06B08-EC4B-4823-A307-D2DF4F6C2CA2}
 		{99FCA93E-67D4-4835-9AF9-97BF5606B221} = {43B5774C-3D54-4389-BB4A-DB9888BE7B5E}
+		{A5BE1AB8-9E5B-4B95-B89E-4E449590B723} = {29DE9A3A-B79D-4B1B-933A-EEB3871A286F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {85020CE7-9EF6-4502-94F6-98643E762B78}
