@@ -3,12 +3,14 @@ using static Vortice.MediaFoundation.MediaFactory;
 
 static class Program
 {
-    static void Main(string[] args)
+    static void Main()
     {
         // Initialize MediaFoundation
-        MFStartup();
+        if (MFStartup().Failure)
+        {
+            return;
+        }
 
-
-        MFShutdown();
+        MFShutdown().CheckError();
     }
 }

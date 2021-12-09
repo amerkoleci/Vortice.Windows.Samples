@@ -17,16 +17,19 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
   
     steps:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Setup .NET 6.0
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.3
+
+    - name: Setup .NET 6 SDK
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 6.0.100
+        dotnet-version: 6.0.x
 
     - name: Build (Release)
-      run: dotnet build Vortice.Windows.Samples.sln -c Release
+      run: msbuild -t:restore,build /p:Configuration=Release
