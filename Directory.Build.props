@@ -9,28 +9,18 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <LangVersion>9.0</LangVersion>
-    <Nullable>enable</Nullable>
-
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <IncludeSymbols>true</IncludeSymbols>
-    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
-
-    <Company>Amer Koleci</Company>
-    <Copyright>Copyright © 2021 Amer Koleci</Copyright>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/amerkoleci/vortice</RepositoryUrl>
-    <ProjectUrl>https://github.com/amerkoleci/vortice</ProjectUrl>
-    <PackageTags>dotnet net netcore netstandard csharp library graphics shader hlsl gamedev compute gpu</PackageTags>
-    <VorticeWindowsVersion>1.9.143</VorticeWindowsVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>10.0</LangVersion>
+    
   </PropertyGroup>
 
   <PropertyGroup Condition=" $(TargetFramework.StartsWith('net5.0-windows')) or $(TargetFramework.StartsWith('net6.0-windows')) ">
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <VorticeWindowsVersion>2.1.0-beta6</VorticeWindowsVersion>
   </PropertyGroup>
 
 </Project>
