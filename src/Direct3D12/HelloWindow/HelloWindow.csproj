@@ -6,7 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Vortice.MediaFoundation" Version="$(VorticeWindowsVersion)" />
+    <Using Include="Vortice.Direct3D12" />
+    
+    <PackageReference Include="Vortice.Direct3D12" Version="$(VorticeWindowsVersion)" />
   </ItemGroup>
 
   <ItemGroup>

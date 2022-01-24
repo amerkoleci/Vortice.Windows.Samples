@@ -1,14 +1,15 @@
-﻿using System;
+﻿// Copyright © Amer Koleci and Contributors.
+// Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
+
+using System;
 using System.IO;
 using System.Threading;
 using Vortice;
-using Vortice.Multimedia;
-using Vortice.XAudio2;
 using static Vortice.XAudio2.XAudio2;
 
 static class Program
 {
-    static void Main(string[] args)
+    static void Main()
     {
         using (IXAudio2 xaudio2 = XAudio2Create())
         {

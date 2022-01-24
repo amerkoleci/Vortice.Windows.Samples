@@ -1,16 +1,9 @@
-﻿using Vortice.MediaFoundation;
-using static Vortice.MediaFoundation.MediaFactory;
+﻿using static Vortice.Direct3D12.D3D12;
 
 static class Program
 {
     static void Main()
     {
-        // Initialize MediaFoundation
-        if (MFStartup().Failure)
-        {
-            return;
-        }
-
-        MFShutdown().CheckError();
+        
     }
 }

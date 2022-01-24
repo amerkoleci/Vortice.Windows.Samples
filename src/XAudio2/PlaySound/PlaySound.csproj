@@ -6,6 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Using Include="Vortice.Multimedia" />
+    <Using Include="Vortice.XAudio2" />
+    
     <Content Include="ergon.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
