@@ -1,48 +1,44 @@
-// Copyright (c) Amer Koleci and contributors.
-// Distributed under the MIT license. See the LICENSE file in the project root for more information.
+// Copyright © Amer Koleci and Contributors.
+// Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
-using System;
+namespace Vortice.Framework;
 
-namespace Vortice.Framework
+public abstract class Application : IDisposable
 {
-    public abstract class Application : IDisposable
+    private readonly AppPlatform _platform;
+
+    public event EventHandler<EventArgs>? Disposed;
+
+
+    protected Application()
     {
-        private readonly AppPlatform _platform;
+        _platform = AppPlatform.Create(this);
+        //_platform.Activated += GamePlatform_Activated;
+        //_platform.Deactivated += GamePlatform_Deactivated;
+    }
 
-        public event EventHandler<EventArgs>? Disposed;
+    public bool IsDisposed { get; private set; }
+    public Window MainWindow => _platform.MainWindow;
 
+    ~Application()
+    {
+        Dispose(dispose: false);
+    }
 
-        protected Application()
+    public void Dispose()
+    {
+        Dispose(dispose: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool dispose)
+    {
+        if (dispose && !IsDisposed)
         {
-            _platform = AppPlatform.Create(this);
-            //_platform.Activated += GamePlatform_Activated;
-            //_platform.Deactivated += GamePlatform_Deactivated;
+            //GraphicsDevice?.Dispose();
+
+            Disposed?.Invoke(this, EventArgs.Empty);
+            IsDisposed = true;
         }
-
-        public bool IsDisposed { get; private set; }
-        public Window MainWindow => _platform.MainWindow;
-
-        ~Application()
-        {
-            Dispose(dispose: false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(dispose: true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool dispose)
-        {
-            if (dispose && !IsDisposed)
-            {
-                //GraphicsDevice?.Dispose();
-
-                Disposed?.Invoke(this, EventArgs.Empty);
-                IsDisposed = true;
-            }
-        }
-
     }
 }

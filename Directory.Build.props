@@ -9,9 +9,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>10.0</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition=" $(TargetFramework.StartsWith('net5.0-windows')) or $(TargetFramework.StartsWith('net6.0-windows')) ">
@@ -20,7 +21,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <VorticeWindowsVersion>2.1.0-beta9</VorticeWindowsVersion>
+    <VorticeWindowsVersion>2.1.1-beta9</VorticeWindowsVersion>
   </PropertyGroup>
 
 </Project>

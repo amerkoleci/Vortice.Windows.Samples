@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Toolkit.Diagnostics" Version="7.1.2" />
+    <PackageReference Include="Vortice.DXGI" Version="$(VorticeWindowsVersion)" />
   </ItemGroup>
 
 </Project>
