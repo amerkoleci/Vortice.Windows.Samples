@@ -1,6 +1,7 @@
 // Copyright © Amer Koleci and Contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
+using Vortice.Mathematics;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.Core;
@@ -18,6 +19,10 @@ internal class UWPWindow : Window, IFrameworkView
     {
         _platform = platform;
     }
+
+    public override string Title { get; set; }
+    public override SizeI ClientSize { get; }
+    public override IntPtr Handle { get; }
 
     private void OnApplicationViewActivated(CoreApplicationView sender, IActivatedEventArgs e)
     {

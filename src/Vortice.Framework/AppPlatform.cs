@@ -14,6 +14,7 @@ internal abstract partial class AppPlatform : IDisposable
 
     public Application Application { get; }
 
+    public abstract bool IsBlockingRun { get; }
     public abstract Window MainWindow { get; }
 
     public event EventHandler<EventArgs>? Activated;

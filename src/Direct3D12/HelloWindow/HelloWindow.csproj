@@ -2,14 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Using Include="Vortice.Direct3D12" />
-    
-    <PackageReference Include="Vortice.Direct3D12" Version="$(VorticeWindowsVersion)" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Vortice.Framework\Vortice.Framework.csproj" />

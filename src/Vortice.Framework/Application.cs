@@ -1,6 +1,8 @@
 // Copyright © Amer Koleci and Contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
+using Vortice.Mathematics;
+
 namespace Vortice.Framework;
 
 public abstract class Application : IDisposable
@@ -9,16 +11,20 @@ public abstract class Application : IDisposable
 
     public event EventHandler<EventArgs>? Disposed;
 
-
     protected Application()
     {
         _platform = AppPlatform.Create(this);
         //_platform.Activated += GamePlatform_Activated;
         //_platform.Deactivated += GamePlatform_Deactivated;
+
+        Current = this;
     }
+
+    public static Application? Current { get; private set; }
 
     public bool IsDisposed { get; private set; }
     public Window MainWindow => _platform.MainWindow;
+    public virtual SizeI DefaultSize => new(800, 600);
 
     ~Application()
     {
@@ -40,5 +46,31 @@ public abstract class Application : IDisposable
             Disposed?.Invoke(this, EventArgs.Empty);
             IsDisposed = true;
         }
+    }
+
+    public void Run()
+    {
+        _platform.Run();
+
+        if (_platform.IsBlockingRun)
+        {
+        }
+    }
+
+    internal void Tick()
+    {
+        if (!BeginDraw())
+            return;
+
+        EndDraw();
+    }
+
+    protected virtual bool BeginDraw()
+    {
+        return true;
+    }
+
+    protected virtual void EndDraw()
+    {
     }
 }

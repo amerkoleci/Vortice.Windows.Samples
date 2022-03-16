@@ -18,6 +18,9 @@ internal class UWPAppPlatform : AppPlatform, IFrameworkViewSource
     }
 
     // <inheritdoc />
+    public override bool IsBlockingRun => false;
+
+    // <inheritdoc />
     public override Window MainWindow => _mainWindow;
 
     IFrameworkView IFrameworkViewSource.CreateView() => _mainWindow;

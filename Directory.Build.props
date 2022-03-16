@@ -15,13 +15,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" $(TargetFramework.StartsWith('net5.0-windows')) or $(TargetFramework.StartsWith('net6.0-windows')) ">
-    <UseWindowsForms>true</UseWindowsForms>
-    <UseWPF>true</UseWPF>
-  </PropertyGroup>
-
   <PropertyGroup>
-    <VorticeWindowsVersion>2.1.1-beta9</VorticeWindowsVersion>
+    <VorticeWindowsVersion>2.1.3-beta</VorticeWindowsVersion>
   </PropertyGroup>
 
 </Project>

@@ -5,10 +5,10 @@
     <TargetFramework>net6.0-windows</TargetFramework>
   </PropertyGroup>
 
+  
+
   <ItemGroup>
-    <Using Include="Vortice.MediaFoundation" />
-    
-    <PackageReference Include="Vortice.MediaFoundation" Version="$(VorticeWindowsVersion)" />
+    <ProjectReference Include="..\..\Vortice.Framework\Vortice.Framework.csproj" />
   </ItemGroup>
 
 </Project>
