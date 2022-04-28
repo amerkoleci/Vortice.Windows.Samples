@@ -30,7 +30,7 @@ public abstract class D3D11Application : Application
     private readonly Format _colorFormat;
     private readonly Format _depthStencilFormat;
     private readonly int _backBufferCount;
-    private readonly IDXGIFactory2 _dxgiFactory;
+    private IDXGIFactory2 _dxgiFactory;
     private readonly bool _isTearingSupported;
     private readonly FeatureLevel _featureLevel;
 
@@ -219,7 +219,17 @@ public abstract class D3D11Application : Application
 
     private void HandleDeviceLost()
     {
-        
+
+    }
+
+    private void UpdateColorSpace()
+    {
+        if (!_dxgiFactory.IsCurrent)
+        {
+            // Output information is cached on the DXGI Factory. If it is stale we need to create a new factory.
+            _dxgiFactory.Dispose();
+            _dxgiFactory = CreateDXGIFactory1<IDXGIFactory2>();
+        }
     }
 
     private void ResizeSwapchain()
@@ -249,7 +259,6 @@ public abstract class D3D11Application : Application
         {
 #if DEBUG
             Result logResult = (hr == DXGI.ResultCode.DeviceRemoved) ? Device.DeviceRemovedReason : hr;
-
             Debug.WriteLine($"Device Lost on ResizeBuffers: Reason code {logResult}");
 #endif
             // If the device was removed for any reason, a new device and swap chain will need to be created.
@@ -304,11 +313,47 @@ public abstract class D3D11Application : Application
 
     protected override void EndDraw()
     {
-        Result result = SwapChain.Present(1, PresentFlags.None);
-        if (result.Failure
-            && result.Code == Vortice.DXGI.ResultCode.DeviceRemoved.Code)
+        int syncInterval = 1;
+        PresentFlags presentFlags = PresentFlags.None;
+        if (!EnableVerticalSync)
         {
-            return;
+            syncInterval = 0;
+            if (_isTearingSupported)
+            {
+                presentFlags = PresentFlags.AllowTearing;
+            }
+        }
+
+        Result result = SwapChain.Present(syncInterval, presentFlags);
+
+        // Discard the contents of the render target.
+        // This is a valid operation only when the existing contents will be entirely
+        // overwritten. If dirty or scroll rects are used, this call should be removed.
+        DeviceContext.DiscardView(ColorTextureView);
+
+        if (DepthStencilView != null)
+        {
+            // Discard the contents of the depth stencil.
+            DeviceContext.DiscardView(DepthStencilView);
+        }
+
+        // If the device was reset we must completely reinitialize the renderer.
+        if (result == DXGI.ResultCode.DeviceRemoved || result == DXGI.ResultCode.DeviceReset)
+        {
+#if DEBUG
+            Result logResult = (result == DXGI.ResultCode.DeviceRemoved) ? Device.DeviceRemovedReason : result;
+            Debug.WriteLine($"Device Lost on Present: Reason code {logResult}");
+#endif
+            HandleDeviceLost();
+        }
+        else
+        {
+            result.CheckError();
+
+            if (!_dxgiFactory.IsCurrent)
+            {
+                UpdateColorSpace();
+            }
         }
     }
 }

@@ -27,6 +27,7 @@ public abstract partial class Application : IDisposable
     public bool IsDisposed { get; private set; }
     public Window MainWindow => _platform.MainWindow;
     public virtual SizeI DefaultSize => new(800, 600);
+    public bool EnableVerticalSync { get; set; } = true;
 
     ~Application()
     {
