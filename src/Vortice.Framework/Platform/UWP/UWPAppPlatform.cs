@@ -14,7 +14,7 @@ internal class UWPAppPlatform : AppPlatform, IFrameworkViewSource
     public UWPAppPlatform(Application application)
         : base(application)
     {
-        _mainWindow = new UWPWindow(this);
+        _mainWindow = new UWPWindow(this, GetDefaultTitleName());
     }
 
     // <inheritdoc />

@@ -5,7 +5,7 @@ using Vortice.Mathematics;
 
 namespace Vortice.Framework;
 
-public abstract class Application : IDisposable
+public abstract partial class Application : IDisposable
 {
     private readonly AppPlatform _platform;
 
@@ -16,6 +16,8 @@ public abstract class Application : IDisposable
         _platform = AppPlatform.Create(this);
         //_platform.Activated += GamePlatform_Activated;
         //_platform.Deactivated += GamePlatform_Deactivated;
+
+        //PlatformConstruct();
 
         Current = this;
     }
@@ -62,6 +64,8 @@ public abstract class Application : IDisposable
         if (!BeginDraw())
             return;
 
+        Render();
+
         EndDraw();
     }
 
@@ -72,5 +76,13 @@ public abstract class Application : IDisposable
 
     protected virtual void EndDraw()
     {
+    }
+
+    protected internal abstract void Render();
+
+    // Platform events
+    internal void OnDisplayChange()
+    {
+
     }
 }

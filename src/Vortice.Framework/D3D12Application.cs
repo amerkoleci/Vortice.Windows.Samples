@@ -10,5 +10,5 @@ namespace Vortice.Framework;
 /// </summary>
 public abstract class D3D12Application : Application
 {
-    
+
 }

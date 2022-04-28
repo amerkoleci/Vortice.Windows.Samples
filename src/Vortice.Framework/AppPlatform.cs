@@ -1,6 +1,8 @@
 // Copyright © Amer Koleci and Contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
+using System.Reflection;
+
 namespace Vortice.Framework;
 
 internal abstract partial class AppPlatform : IDisposable
@@ -53,4 +55,32 @@ internal abstract partial class AppPlatform : IDisposable
     {
         Deactivated?.Invoke(this, EventArgs.Empty);
     }
+
+    internal static string GetDefaultTitleName()
+    {
+        string? assemblyTitle = GetAssemblyTitle(Assembly.GetEntryAssembly());
+        if (!string.IsNullOrEmpty(assemblyTitle))
+        {
+            return assemblyTitle!;
+        }
+
+        return "Vortice";
+    }
+
+    private static string? GetAssemblyTitle(Assembly? assembly)
+    {
+        if (assembly == null)
+        {
+            return null;
+        }
+
+        AssemblyTitleAttribute? atribute = assembly.GetCustomAttribute<AssemblyTitleAttribute>();
+        if (atribute != null)
+        {
+            return atribute.Title;
+        }
+
+        return null;
+    }
+
 }

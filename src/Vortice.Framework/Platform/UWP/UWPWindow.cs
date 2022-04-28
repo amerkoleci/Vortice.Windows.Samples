@@ -15,9 +15,10 @@ internal class UWPWindow : Window, IFrameworkView
     private readonly UWPAppPlatform _platform;
     private bool _windowClosed;
 
-    public UWPWindow(UWPAppPlatform platform)
+    public UWPWindow(UWPAppPlatform platform, string title)
     {
         _platform = platform;
+        Title = title;
     }
 
     public override string Title { get; set; }

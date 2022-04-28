@@ -64,7 +64,7 @@ internal unsafe class Win32AppPlatform : AppPlatform
             }
         }
 
-        _mainWindow = new Win32Window(this);
+        _mainWindow = new Win32Window(this, GetDefaultTitleName());
         _windows.Add(_mainWindow.Handle, _mainWindow);
     }
 
@@ -102,13 +102,12 @@ internal unsafe class Win32AppPlatform : AppPlatform
     {
     }
 
-    private static bool s_InSizeMove;
     private static bool s_fullscreen;
 
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
     private static LRESULT ProcessWindowMessage(HWND hWnd, uint message, WPARAM wParam, LPARAM lParam)
     {
-        if (_windows.TryGetValue(hWnd, out Win32Window window))
+        if (_windows.TryGetValue(hWnd, out Win32Window? window))
         {
         }
 
@@ -119,7 +118,7 @@ internal unsafe class Win32AppPlatform : AppPlatform
                 break;
 
             case WM_PAINT:
-                if (s_InSizeMove && Application.Current != null)
+                if (window!.InSizeMove && Application.Current != null)
                 {
                     Application.Current.Tick();
                 }
@@ -132,25 +131,45 @@ internal unsafe class Win32AppPlatform : AppPlatform
                 break;
 
             case WM_DISPLAYCHANGE:
-                //if (Application.Current != null)
+                if (Application.Current != null)
+                {
+                    Application.Current.OnDisplayChange();
+                }
+                break;
+
+            case WM_MOVE:
+                break;
+
+            case WM_SIZE:
+                //if ((nuint)wParam == SIZE_MINIMIZED)
                 //{
-                //    Application.Current.OnDisplayChange();
+                //    if (!s_minimized)
+                //    {
+                //        s_minimized = true;
+                //        if (!s_in_suspend && game)
+                //            game->OnSuspending();
+                //        s_in_suspend = true;
+                //    }
+                //}
+                //else if (s_minimized)
+                //{
+                //    s_minimized = false;
+                //    if (s_in_suspend && game)
+                //        game->OnResuming();
+                //    s_in_suspend = false;
+                //}
+                //else if (!s_in_sizemove && game)
+                //{
+                //    game->OnWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
                 //}
                 break;
 
             case WM_ENTERSIZEMOVE:
-                s_InSizeMove = true;
+                window!.EnterSizeMove();
                 break;
 
             case WM_EXITSIZEMOVE:
-                s_InSizeMove = false;
-                //if (game)
-                //{
-                //    RECT rc;
-                //    GetClientRect(hWnd, &rc);
-                //
-                //    game->OnWindowSizeChanged(rc.right - rc.left, rc.bottom - rc.top);
-                //}
+                window!.ExitSizeMove();
                 break;
 
             case WM_GETMINMAXINFO:
@@ -216,6 +235,16 @@ internal unsafe class Win32AppPlatform : AppPlatform
         }
 
         return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+
+    private static int Loword(int number)
+    {
+        return number & 0x0000FFFF;
+    }
+
+    private static int Hiword(int number)
+    {
+        return number >> 16;
     }
 
     private static LRESULT MakeLResult(uint lowPart, uint highPart)

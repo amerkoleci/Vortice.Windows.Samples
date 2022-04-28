@@ -17,11 +17,13 @@ internal unsafe class Win32Window : Window, IDisposable
 {
     private readonly Win32AppPlatform _platform;
     private readonly HWND _hwnd;
+    private SizeI _clientSize;
+    private bool _inSizeMove;
 
-    public Win32Window(Win32AppPlatform platform)
+    public Win32Window(Win32AppPlatform platform, string title)
     {
         _platform = platform;
-        Title = "Vortice";
+        Title = title;
 
         var rect = new RECT
         {
@@ -57,7 +59,7 @@ internal unsafe class Win32Window : Window, IDisposable
        
         RECT windowRect;
         GetClientRect(_hwnd, &windowRect);
-        ClientSize = new(windowRect.right - windowRect.left, windowRect.bottom - windowRect.top);
+        _clientSize = new(windowRect.right - windowRect.left, windowRect.bottom - windowRect.top);
     }
 
     public void Dispose()
@@ -66,11 +68,25 @@ internal unsafe class Win32Window : Window, IDisposable
     }
 
     public override string Title { get; set; }
-    public override SizeI ClientSize { get; }
+    public override SizeI ClientSize => _clientSize;
     public override IntPtr Handle => _hwnd;
+    public bool InSizeMove => _inSizeMove;
 
     public void Show()
     {
         ShowWindow(_hwnd, SW_NORMAL);
+    }
+
+    internal void EnterSizeMove()
+    {
+        _inSizeMove = true;
+    }
+
+    internal void ExitSizeMove()
+    {
+        _inSizeMove = false;
+        RECT windowRect;
+        GetClientRect(_hwnd, &windowRect);
+        _clientSize = new(windowRect.right - windowRect.left, windowRect.bottom - windowRect.top);
     }
 }
