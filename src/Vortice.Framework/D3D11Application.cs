@@ -27,15 +27,14 @@ public abstract class D3D11Application : Application
         FeatureLevel.Level_10_0
     };
 
-    private readonly IDXGIFactory2 _dxgiFactory;
-    private readonly bool _isTearingSupported;
-    private readonly FeatureLevel _featureLevel;
     private readonly Format _colorFormat;
     private readonly Format _depthStencilFormat;
     private readonly int _backBufferCount;
+    private readonly IDXGIFactory2 _dxgiFactory;
+    private readonly bool _isTearingSupported;
+    private readonly FeatureLevel _featureLevel;
 
-    protected D3D11Application(
-        Format colorFormat = Format.B8G8R8A8_UNorm,
+    protected D3D11Application(Format colorFormat = Format.B8G8R8A8_UNorm,
         Format depthStencilFormat = Format.D32_Float,
         int backBufferCount = 2)
     {

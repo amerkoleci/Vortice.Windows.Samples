@@ -118,9 +118,9 @@ internal unsafe class Win32AppPlatform : AppPlatform
                 break;
 
             case WM_PAINT:
-                if (window!.InSizeMove && Application.Current != null)
+                if (window!.InSizeMove && D3D12Application.Current != null)
                 {
-                    Application.Current.Tick();
+                    D3D12Application.Current.Tick();
                 }
                 else
                 {
@@ -131,9 +131,9 @@ internal unsafe class Win32AppPlatform : AppPlatform
                 break;
 
             case WM_DISPLAYCHANGE:
-                if (Application.Current != null)
+                if (D3D12Application.Current != null)
                 {
-                    Application.Current.OnDisplayChange();
+                    D3D12Application.Current.OnDisplayChange();
                 }
                 break;
 
@@ -206,9 +206,9 @@ internal unsafe class Win32AppPlatform : AppPlatform
                         SetWindowLongPtr(hWnd, GWL_EXSTYLE, IntPtr.Zero);
 
                         SizeI windowSize = new(800, 600);
-                        if (Application.Current != null)
+                        if (D3D12Application.Current != null)
                         {
-                            windowSize = Application.Current.DefaultSize;
+                            windowSize = D3D12Application.Current.DefaultSize;
                         }
 
                         ShowWindow(hWnd, SW_SHOWNORMAL);

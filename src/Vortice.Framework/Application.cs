@@ -43,8 +43,6 @@ public abstract partial class Application : IDisposable
     {
         if (dispose && !IsDisposed)
         {
-            //GraphicsDevice?.Dispose();
-
             Disposed?.Invoke(this, EventArgs.Empty);
             IsDisposed = true;
         }

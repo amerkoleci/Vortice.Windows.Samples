@@ -18,7 +18,7 @@ static class Program
 
     static void Main()
     {
-        using HelloWindowApp app = new HelloWindowApp();
+        using HelloWindowApp app = new();
         app.Run();
     }
 }
