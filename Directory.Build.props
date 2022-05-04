@@ -1,14 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
-    <RepositoryRootDirectory>$(MSBuildThisFileDirectory)</RepositoryRootDirectory>
-    <BinDir>$(RepositoryRootDirectory)bin</BinDir>
-    <OutputPath>$([System.IO.Path]::GetFullPath('$(RepositoryRootDirectory)bin\$(Configuration)'))\$(MSBuildProjectName)</OutputPath>
-    <BaseIntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(RepositoryRootDirectory)bin\obj\$(MSBuildProjectName)'))\</BaseIntermediateOutputPath>
-    <PackageOutputPath>$(BinDir)\Packages\$(Configuration)</PackageOutputPath>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <LangVersion>10.0</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -16,7 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <VorticeWindowsVersion>2.1.10-beta</VorticeWindowsVersion>
+    <VorticeWindowsVersion>2.1.11-beta</VorticeWindowsVersion>
   </PropertyGroup>
 
 </Project>

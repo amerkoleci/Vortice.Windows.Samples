@@ -1,15 +1,51 @@
 ﻿// Copyright © Amer Koleci and Contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
+using Vortice.Direct3D12;
 using Vortice.Framework;
-using static Vortice.Direct3D12.D3D12;
+using Vortice.Mathematics;
 
 static class Program
 {
     class HelloWindowApp : D3D12Application
     {
+        public HelloWindowApp()
+        {
+            UseRenderPass = true;
+        }
+
         protected override void OnRender()
         {
+            Color4 clearColor = Colors.CornflowerBlue;
+
+            if (UseRenderPass)
+            {
+                var renderPassDesc = new RenderPassRenderTargetDescription(ColorTextureView,
+                    new RenderPassBeginningAccess(new ClearValue(ColorFormat, clearColor)),
+                    new RenderPassEndingAccess(RenderPassEndingAccessType.Preserve)
+                    );
+
+                RenderPassDepthStencilDescription? depthStencil = default;
+                if (DepthStencilView.HasValue)
+                {
+                    depthStencil = new RenderPassDepthStencilDescription(
+                        DepthStencilView.Value,
+                        new RenderPassBeginningAccess(new ClearValue(DepthStencilFormat, 1.0f, 0)),
+                        new RenderPassEndingAccess(RenderPassEndingAccessType.Discard)
+                        );
+                }
+
+                CommandList.BeginRenderPass(renderPassDesc, depthStencil);
+            }
+            else
+            {
+                CommandList.ClearRenderTargetView(ColorTextureView, clearColor);
+
+                //if (dsvDescriptor.HasValue)
+                //{
+                //    _commandList.ClearDepthStencilView(dsvDescriptor.Value, ClearFlags.Depth, 1.0f, 0);
+                //}
+            }
         }
     }
 

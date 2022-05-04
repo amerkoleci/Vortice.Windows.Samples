@@ -11,6 +11,7 @@ using Vortice.Direct3D12.Debug;
 using System.Diagnostics;
 using Vortice.DXGI.Debug;
 using SharpGen.Runtime;
+using Vortice.Mathematics;
 
 namespace Vortice.Framework;
 
@@ -22,7 +23,8 @@ public abstract class D3D12Application : Application
     private readonly Format _colorFormat;
     private readonly Format _depthStencilFormat;
     private readonly int _backBufferCount;
-    private readonly IDXGIFactory4 _dxgiFactory;
+    private readonly bool _dxgiDebug;
+    private IDXGIFactory4 _dxgiFactory;
     private readonly bool _isTearingSupported;
 
     private readonly ulong[] _fenceValues;
@@ -32,6 +34,11 @@ public abstract class D3D12Application : Application
     private readonly ID3D12DescriptorHeap _rtvDescriptorHeap;
     private readonly int _rtvDescriptorSize;
     private readonly ID3D12Resource[] _renderTargets;
+    private int _backBufferIndex;
+
+    private readonly ID3D12DescriptorHeap? _dsvDescriptorHeap;
+
+    private readonly ID3D12CommandAllocator[] _commandAllocators;
 
     protected D3D12Application(Format colorFormat = Format.B8G8R8A8_UNorm,
         Format depthStencilFormat = Format.D32_Float,
@@ -41,7 +48,6 @@ public abstract class D3D12Application : Application
         _depthStencilFormat = depthStencilFormat;
         _backBufferCount = backBufferCount;
 
-        bool dxgiDebug = false;
 #if DEBUG
         // Enable the debug layer (requires the Graphics Tools "optional feature").
         //
@@ -59,7 +65,7 @@ public abstract class D3D12Application : Application
 
             if (DXGIGetDebugInterface1(out IDXGIInfoQueue? dxgiInfoQueue).Success)
             {
-                dxgiDebug = true;
+                _dxgiDebug = true;
 
                 dxgiInfoQueue!.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Error, true);
                 dxgiInfoQueue!.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Corruption, true);
@@ -80,7 +86,7 @@ public abstract class D3D12Application : Application
         }
 #endif
 
-        _dxgiFactory = CreateDXGIFactory2<IDXGIFactory4>(dxgiDebug);
+        _dxgiFactory = CreateDXGIFactory2<IDXGIFactory4>(_dxgiDebug);
 
         using (IDXGIFactory5? factory5 = _dxgiFactory.QueryInterfaceOrNull<IDXGIFactory5>())
         {
@@ -207,8 +213,58 @@ public abstract class D3D12Application : Application
             SwapChain = tempSwapChain.QueryInterface<IDXGISwapChain3>();
         }
 
+        // Create RTV heap to handle SwapChain RTVs
         _rtvDescriptorHeap = Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, _backBufferCount));
         _rtvDescriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
+
+        // Create frame resources.
+        {
+            CpuDescriptorHandle rtvHandle = _rtvDescriptorHeap.GetCPUDescriptorHandleForHeapStart();
+
+            // Create a RTV for each frame.
+            _renderTargets = new ID3D12Resource[swapChainDesc.BufferCount];
+            for (int i = 0; i < swapChainDesc.BufferCount; i++)
+            {
+                _renderTargets[i] = SwapChain.GetBuffer<ID3D12Resource>(i);
+                Device.CreateRenderTargetView(_renderTargets[i], null, rtvHandle);
+                rtvHandle += _rtvDescriptorSize;
+            }
+        }
+
+        if (_depthStencilFormat != Format.Unknown)
+        {
+            ResourceDescription depthStencilDesc = ResourceDescription.Texture2D(_depthStencilFormat, (ulong)swapChainDesc.Width, swapChainDesc.Height, 1, 1);
+            depthStencilDesc.Flags |= ResourceFlags.AllowDepthStencil;
+
+            ClearValue depthOptimizedClearValue = new ClearValue(_depthStencilFormat, 1.0f, 0);
+
+            DepthStencilTexture = Device.CreateCommittedResource(
+                new HeapProperties(HeapType.Default),
+                HeapFlags.None,
+                depthStencilDesc,
+                ResourceStates.DepthWrite,
+                depthOptimizedClearValue);
+            DepthStencilTexture.Name = "DepthStencil Texture";
+
+            DepthStencilViewDescription dsViewDesc = new()
+            {
+                Format = _depthStencilFormat,
+                ViewDimension = DepthStencilViewDimension.Texture2D
+            };
+
+            _dsvDescriptorHeap = Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.DepthStencilView, 1));
+            Device.CreateDepthStencilView(DepthStencilTexture, dsViewDesc, _dsvDescriptorHeap.GetCPUDescriptorHandleForHeapStart());
+        }
+
+        _commandAllocators = new ID3D12CommandAllocator[swapChainDesc.BufferCount];
+        for (int i = 0; i < swapChainDesc.BufferCount; i++)
+        {
+            _commandAllocators[i] = Device.CreateCommandAllocator(CommandListType.Direct);
+        }
+
+        // Create a command list for recording graphics commands.
+        CommandList = Device.CreateCommandList<ID3D12GraphicsCommandList4>(CommandListType.Direct, _commandAllocators[0]);
+        CommandList.Close();
     }
 
     public ID3D12Device2 Device { get; }
@@ -217,7 +273,30 @@ public abstract class D3D12Application : Application
     public ID3D12CommandQueue DirectQueue { get; }
 
     public IDXGISwapChain3 SwapChain { get; }
-    public int CurrentBackBufferIndex => SwapChain.CurrentBackBufferIndex;
+    public int BackBufferIndex => _backBufferIndex;
+
+    public Format ColorFormat => _colorFormat;
+    public ID3D12Resource ColorTexture => _renderTargets[_backBufferIndex];
+    public CpuDescriptorHandle ColorTextureView
+    {
+        get => new(_rtvDescriptorHeap.GetCPUDescriptorHandleForHeapStart(), _backBufferIndex, _rtvDescriptorSize);
+    }
+
+    public Format DepthStencilFormat => _depthStencilFormat;
+    public ID3D12Resource? DepthStencilTexture { get; private set; }
+    public CpuDescriptorHandle? DepthStencilView
+    {
+        get => _dsvDescriptorHeap != null ? _dsvDescriptorHeap.GetCPUDescriptorHandleForHeapStart() : default;
+    }
+
+    public ID3D12GraphicsCommandList4 CommandList { get; }
+
+    /// <summary>
+    /// Gets the viewport.
+    /// </summary>
+    public Viewport Viewport => new Viewport(MainWindow.ClientSize.Width, MainWindow.ClientSize.Height);
+
+    public bool UseRenderPass { get; set; }
 
     protected override void Dispose(bool dispose)
     {
@@ -225,10 +304,15 @@ public abstract class D3D12Application : Application
         {
             WaitForGpu();
 
-            //ColorTexture.Dispose();
-            //ColorTextureView.Dispose();
-            //DepthStencilTexture?.Dispose();
-            //DepthStencilView?.Dispose();
+            DepthStencilTexture?.Dispose();
+            _dsvDescriptorHeap?.Dispose();
+
+            for (int i = 0; i < _commandAllocators.Length; i++)
+            {
+                _commandAllocators[i].Dispose();
+                _renderTargets[i].Dispose();
+            }
+            CommandList.Dispose();
 
             _frameFence.Dispose();
             _rtvDescriptorHeap.Dispose();
@@ -253,7 +337,7 @@ public abstract class D3D12Application : Application
     private void WaitForGpu()
     {
         // Schedule a Signal command in the GPU queue.
-        ulong fenceValue = _fenceValues[CurrentBackBufferIndex];
+        ulong fenceValue = _fenceValues[_backBufferIndex];
         DirectQueue.Signal(_frameFence, fenceValue);
 
         // Wait until the Signal has been processed.
@@ -262,7 +346,7 @@ public abstract class D3D12Application : Application
             _frameFenceEvent.WaitOne();
 
             // Increment the fence value for the current frame.
-            _fenceValues[CurrentBackBufferIndex]++;
+            _fenceValues[_backBufferIndex]++;
         }
     }
 
@@ -277,11 +361,35 @@ public abstract class D3D12Application : Application
 
     protected internal override void Render()
     {
-        //DeviceContext.RSSetViewport(Viewport);
-        //DeviceContext.RSSetScissorRect(0, 0, MainWindow.ClientSize.Width, MainWindow.ClientSize.Height);
-        //DeviceContext.OMSetRenderTargets(ColorTextureView, DepthStencilView);
+        _commandAllocators[_backBufferIndex].Reset();
+        CommandList.Reset(_commandAllocators[_backBufferIndex]);
+        CommandList.BeginEvent("Frame");
+
+        // Indicate that the back buffer will be used as a render target.
+        CommandList.ResourceBarrierTransition(_renderTargets[_backBufferIndex], ResourceStates.Present, ResourceStates.RenderTarget);
+
+        if (!UseRenderPass)
+        {
+            CommandList.OMSetRenderTargets(ColorTextureView, false, DepthStencilView);
+        }
+
+        CommandList.RSSetViewport(Viewport);
+        CommandList.RSSetScissorRect(MainWindow.ClientSize.Width, MainWindow.ClientSize.Height);
 
         OnRender();
+
+        if (UseRenderPass)
+        {
+            CommandList.EndRenderPass();
+        }
+
+        // Indicate that the back buffer will now be used to present.
+        CommandList.ResourceBarrierTransition(_renderTargets[_backBufferIndex], ResourceStates.RenderTarget, ResourceStates.Present);
+        CommandList.EndEvent();
+        CommandList.Close();
+
+        // Execute the command list.
+        DirectQueue.ExecuteCommandList(CommandList);
     }
 
     protected abstract void OnRender();
@@ -302,11 +410,70 @@ public abstract class D3D12Application : Application
 
     protected override void EndDraw()
     {
-        Result result = SwapChain.Present(1, PresentFlags.None);
-        if (result.Failure
-            && result.Code == Vortice.DXGI.ResultCode.DeviceRemoved.Code)
+        int syncInterval = 1;
+        PresentFlags presentFlags = PresentFlags.None;
+        if (!EnableVerticalSync)
         {
-            return;
+            syncInterval = 0;
+            if (_isTearingSupported)
+            {
+                presentFlags = PresentFlags.AllowTearing;
+            }
         }
+
+        Result result = SwapChain.Present(syncInterval, presentFlags);
+
+        // If the device was reset we must completely reinitialize the renderer.
+        if (result == DXGI.ResultCode.DeviceRemoved || result == DXGI.ResultCode.DeviceReset)
+        {
+#if DEBUG
+            Result logResult = (result == DXGI.ResultCode.DeviceRemoved) ? Device.DeviceRemovedReason : result;
+            Debug.WriteLine($"Device Lost on Present: Reason code {logResult}");
+#endif
+            HandleDeviceLost();
+        }
+        else
+        {
+            result.CheckError();
+
+            MoveToNextFrame();
+
+            if (!_dxgiFactory.IsCurrent)
+            {
+                UpdateColorSpace();
+            }
+        }
+    }
+
+    private void MoveToNextFrame()
+    {
+        // Schedule a Signal command in the queue.
+        ulong currentFenceValue = _fenceValues[_backBufferIndex];
+        DirectQueue.Signal(_frameFence, currentFenceValue);
+
+        // Update the back buffer index.
+        _backBufferIndex = SwapChain.CurrentBackBufferIndex;
+
+        // If the next frame is not ready to be rendered yet, wait until it is ready.
+        if (_frameFence.CompletedValue < _fenceValues[_backBufferIndex])
+        {
+            _frameFence.SetEventOnCompletion(_fenceValues[_backBufferIndex], _frameFenceEvent).CheckError();
+            _frameFenceEvent.WaitOne();
+        }
+
+        // Set the fence value for the next frame.
+        _fenceValues[_backBufferIndex] = currentFenceValue + 1;
+    }
+
+    private void UpdateColorSpace()
+    {
+        if (!_dxgiFactory.IsCurrent)
+        {
+            // Output information is cached on the DXGI Factory. If it is stale we need to create a new factory.
+            _dxgiFactory.Dispose();
+            _dxgiFactory = CreateDXGIFactory2<IDXGIFactory4>(_dxgiDebug);
+        }
+
+        // TODO:
     }
 }

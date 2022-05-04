@@ -131,9 +131,11 @@ public abstract class D3D11Application : Application
     public FeatureLevel FeatureLevel => _featureLevel;
     public IDXGISwapChain1 SwapChain { get; }
 
+    public Format ColorFormat => _colorFormat;
     public ID3D11Texture2D ColorTexture { get; private set; }
     public ID3D11RenderTargetView ColorTextureView { get; private set; }
 
+    public Format DepthStencilFormat => _depthStencilFormat;
     public ID3D11Texture2D? DepthStencilTexture { get; private set; }
     public ID3D11DepthStencilView? DepthStencilView { get; private set; }
 
