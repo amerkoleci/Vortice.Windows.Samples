@@ -28,8 +28,8 @@ static class Program
         protected override void Initialize()
         {
             MeshData mesh = MeshUtilities.CreateCube(5.0f);
-            _vertexBuffer = Device.CreateBuffer(BindFlags.VertexBuffer, mesh.Vertices);
-            _indexBuffer = Device.CreateBuffer(BindFlags.IndexBuffer, mesh.Indices);
+            _vertexBuffer = Device.CreateBuffer(mesh.Vertices, BindFlags.VertexBuffer);
+            _indexBuffer = Device.CreateBuffer(mesh.Indices, BindFlags.IndexBuffer);
 
             _constantBuffer = Device.CreateBuffer(sizeof(Matrix4x4), BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write);
 

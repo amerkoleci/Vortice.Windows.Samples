@@ -32,22 +32,18 @@ static class Program
         protected override void Initialize()
         {
             MeshData mesh = MeshUtilities.CreateCube(5.0f);
-            _vertexBuffer = Device.CreateBuffer(BindFlags.VertexBuffer, mesh.Vertices);
-            _indexBuffer = Device.CreateBuffer(BindFlags.IndexBuffer, mesh.Indices);
+            _vertexBuffer = Device.CreateBuffer(mesh.Vertices, BindFlags.VertexBuffer);
+            _indexBuffer = Device.CreateBuffer(mesh.Indices, BindFlags.IndexBuffer);
 
-            _constantBuffer = Device.CreateBuffer(sizeof(Matrix4x4), BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write);
+            _constantBuffer = Device.CreateConstantBuffer<Matrix4x4>();
 
-            Color[] pixels = new Color[16] {
+            ReadOnlySpan<Color> pixels = stackalloc Color[16] {
                 new Color(0xFFFFFFFF), new Color(0x00000000), new Color(0xFFFFFFFF), new Color(0x00000000),
                 new Color(0x00000000), new Color(0xFFFFFFFF), new Color(0x00000000), new Color(0xFFFFFFFF),
                 new Color(0xFFFFFFFF), new Color(0x00000000), new Color(0xFFFFFFFF), new Color(0x00000000),
                 new Color(0x00000000), new Color(0xFFFFFFFF), new Color(0x00000000), new Color(0xFFFFFFFF),
             };
-            fixed (Color* pixelsPtr = pixels)
-            {
-                int rowPitch = 4 * 4;
-                _texture = Device.CreateTexture2D(Format.R8G8B8A8_UNorm, 4, 4, 1, 1, new[] { new SubresourceData(pixelsPtr, rowPitch) });
-            }
+            _texture = Device.CreateTexture2D(Format.R8G8B8A8_UNorm, 4, 4, pixels);
             _textureSRV = Device.CreateShaderResourceView(_texture);
             _textureSampler = Device.CreateSamplerState(SamplerDescription.PointWrap);
 
