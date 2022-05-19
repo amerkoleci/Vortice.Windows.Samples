@@ -27,6 +27,7 @@ public abstract partial class Application : IDisposable
     public Window MainWindow => _platform.MainWindow;
     public virtual SizeI DefaultSize => new(1280, 720);
     public bool EnableVerticalSync { get; set; } = true;
+    public float AspectRatio => (float)MainWindow.ClientSize.Width / MainWindow.ClientSize.Height;
 
     ~Application()
     {

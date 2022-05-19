@@ -13,36 +13,34 @@ using Vortice.Mathematics;
 
 static class Program
 {
-    internal class HelloTriangleApp : D3D11Application
+    internal class DrawIndexedQuad : D3D11Application
     {
         private ID3D11Buffer _vertexBuffer;
+        private ID3D11Buffer _indexBuffer;
         private ID3D11VertexShader _vertexShader;
         private ID3D11PixelShader _pixelShader;
         private ID3D11InputLayout _inputLayout;
 
         protected override void Initialize()
         {
-            ReadOnlySpan<VertexPositionColor> triangleVertices = new VertexPositionColor[]
+            ReadOnlySpan<VertexPositionColor> quadVertices = stackalloc VertexPositionColor[]
             {
-                new VertexPositionColor(new Vector3(0f, 0.5f, 0.0f), new Color4(1.0f, 0.0f, 0.0f, 1.0f)),
-                new VertexPositionColor(new Vector3(0.5f, -0.5f, 0.0f), new Color4(0.0f, 1.0f, 0.0f, 1.0f)),
+                new VertexPositionColor(new Vector3(-0.5f,  0.5f, 0.0f), new Color4(1.0f, 0.0f, 0.0f, 1.0f)),
+                new VertexPositionColor(new Vector3(0.5f, 0.5f, 0.0f), new Color4(0.0f, 1.0f, 0.0f, 1.0f)),
+                new VertexPositionColor(new Vector3(0.5f, -0.5f, 0.0f), new Color4(0.0f, 0.0f, 1.0f, 1.0f)),
                 new VertexPositionColor(new Vector3(-0.5f, -0.5f, 0.0f), new Color4(0.0f, 0.0f, 1.0f, 1.0f))
             };
-            _vertexBuffer = Device.CreateBuffer(triangleVertices, BindFlags.VertexBuffer);
+            _vertexBuffer = Device.CreateBuffer(quadVertices, BindFlags.VertexBuffer);
+
+            ReadOnlySpan<ushort> quadIndices = stackalloc ushort[] { 0, 1, 2, 0, 2, 3 };
+            _indexBuffer = Device.CreateBuffer(quadIndices, BindFlags.IndexBuffer);
 
             Span<byte> vertexShaderByteCode = CompileBytecode("HelloTriangle.hlsl", "VSMain", "vs_4_0");
             Span<byte> pixelShaderByteCode = CompileBytecode("HelloTriangle.hlsl", "PSMain", "ps_4_0");
 
             _vertexShader = Device.CreateVertexShader(vertexShaderByteCode);
             _pixelShader = Device.CreatePixelShader(pixelShaderByteCode);
-
-            InputElementDescription[] inputElementDescs = new[]
-            {
-                new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
-                new InputElementDescription("COLOR", 0, Format.R32G32B32A32_Float, 12, 0)
-            };
-
-            _inputLayout = Device.CreateInputLayout(inputElementDescs, vertexShaderByteCode);
+            _inputLayout = Device.CreateInputLayout(VertexPositionColor.InputElements, vertexShaderByteCode);
         }
 
         protected override void Dispose(bool dispose)
@@ -68,7 +66,8 @@ static class Program
             DeviceContext.PSSetShader(_pixelShader);
             DeviceContext.IASetInputLayout(_inputLayout);
             DeviceContext.IASetVertexBuffer(0, _vertexBuffer, VertexPositionColor.SizeInBytes);
-            DeviceContext.Draw(3, 0);
+            DeviceContext.IASetIndexBuffer(_indexBuffer, Format.R16_UInt, 0);
+            DeviceContext.DrawIndexed(6, 0, 0);
         }
 
         private static Span<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
@@ -84,7 +83,7 @@ static class Program
 
     static void Main()
     {
-        using HelloTriangleApp app = new();
+        using DrawIndexedQuad app = new();
         app.Run();
     }
 }

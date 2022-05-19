@@ -8,22 +8,22 @@ using Vortice.Mathematics;
 
 namespace Vortice.Framework;
 
-public readonly struct VertexPositionColor
+public readonly struct VertexPositionNormal
 {
-    public static unsafe readonly int SizeInBytes = sizeof(VertexPositionColor);
+    public static unsafe readonly int SizeInBytes = sizeof(VertexPositionNormal);
 
     public static InputElementDescription[] InputElements = new[]
     {
         new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
-        new InputElementDescription("COLOR", 0, Format.R32G32B32A32_Float, 12, 0)
+        new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0)
     };
 
-    public VertexPositionColor(in Vector3 position, in Color4 color)
+    public VertexPositionNormal(in Vector3 position, in Vector3 normal)
     {
         Position = position;
-        Color = color;
+        Normal = normal;
     }
 
     public readonly Vector3 Position;
-    public readonly Color4 Color;
+    public readonly Vector3 Normal;
 }
