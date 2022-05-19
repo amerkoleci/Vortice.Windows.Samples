@@ -6,7 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="Shaders\**" CopyToOutputDirectory="PreserveNewest" />
+    
     <ProjectReference Include="..\..\Vortice.Framework\Vortice.Framework.csproj" />
+    <PackageReference Include="Vortice.D3DCompiler" />
   </ItemGroup>
 
 </Project>

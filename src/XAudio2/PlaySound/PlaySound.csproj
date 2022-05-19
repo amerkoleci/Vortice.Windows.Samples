@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Vortice.XAudio2" Version="$(VorticeWindowsVersion)" />
+    <PackageReference Include="Vortice.XAudio2" />
   </ItemGroup>
 
 </Project>

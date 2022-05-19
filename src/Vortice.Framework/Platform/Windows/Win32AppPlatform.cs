@@ -77,6 +77,8 @@ internal unsafe class Win32AppPlatform : AppPlatform
     // <inheritdoc />
     public override void Run()
     {
+        OnReady();
+
         _mainWindow.Show();
 
         // Main message loop

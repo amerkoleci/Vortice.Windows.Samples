@@ -19,6 +19,8 @@ internal abstract partial class AppPlatform : IDisposable
     public abstract bool IsBlockingRun { get; }
     public abstract Window MainWindow { get; }
 
+    public event EventHandler<EventArgs>? Ready;
+
     public event EventHandler<EventArgs>? Activated;
 
     public event EventHandler<EventArgs>? Deactivated;
@@ -45,6 +47,10 @@ internal abstract partial class AppPlatform : IDisposable
     public abstract void Run();
     public abstract void RequestExit();
 
+    protected void OnReady()
+    {
+        Ready?.Invoke(this, EventArgs.Empty);
+    }
 
     protected void OnActivated()
     {

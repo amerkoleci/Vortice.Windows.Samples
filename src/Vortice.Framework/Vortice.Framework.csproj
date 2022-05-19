@@ -21,14 +21,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Toolkit.Diagnostics" Version="7.1.2" />
-    <PackageReference Include="Vortice.Direct3D11" Version="$(VorticeWindowsVersion)" />
-    <PackageReference Include="Vortice.Direct3D12" Version="$(VorticeWindowsVersion)" />
+    <PackageReference Include="Microsoft.Toolkit.Diagnostics" />
+    <PackageReference Include="Vortice.Direct3D11" />
+    <PackageReference Include="Vortice.Direct3D12" />
 
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.1.647-beta">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Microsoft.Windows.CsWin32" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

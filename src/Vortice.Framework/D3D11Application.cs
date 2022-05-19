@@ -34,7 +34,8 @@ public abstract class D3D11Application : Application
     private readonly bool _isTearingSupported;
     private readonly FeatureLevel _featureLevel;
 
-    protected D3D11Application(Format colorFormat = Format.B8G8R8A8_UNorm,
+    protected D3D11Application(
+        Format colorFormat = Format.B8G8R8A8_UNorm,
         Format depthStencilFormat = Format.D32_Float,
         int backBufferCount = 2)
     {
@@ -289,10 +290,9 @@ public abstract class D3D11Application : Application
 
     protected internal override void Render()
     {
+        DeviceContext.OMSetRenderTargets(ColorTextureView, DepthStencilView);
         DeviceContext.RSSetViewport(Viewport);
         DeviceContext.RSSetScissorRect(0, 0, MainWindow.ClientSize.Width, MainWindow.ClientSize.Height);
-
-        DeviceContext.OMSetRenderTargets(ColorTextureView, DepthStencilView);
 
         OnRender();
     }

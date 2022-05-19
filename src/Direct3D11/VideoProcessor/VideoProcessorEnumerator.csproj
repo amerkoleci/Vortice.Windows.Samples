@@ -8,7 +8,7 @@
   <ItemGroup>
     <Using Include="Vortice.Direct3D11" />
     
-    <PackageReference Include="Vortice.Direct3D11" Version="$(VorticeWindowsVersion)" />
+    <PackageReference Include="Vortice.Direct3D11" />
   </ItemGroup>
 
 </Project>

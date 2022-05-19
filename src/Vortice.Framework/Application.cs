@@ -16,8 +16,7 @@ public abstract partial class Application : IDisposable
         _platform = AppPlatform.Create(this);
         //_platform.Activated += GamePlatform_Activated;
         //_platform.Deactivated += GamePlatform_Deactivated;
-
-        //PlatformConstruct();
+        _platform.Ready += OnPlatformReady;
 
         Current = this;
     }
@@ -68,6 +67,11 @@ public abstract partial class Application : IDisposable
         EndDraw();
     }
 
+    protected virtual void Initialize()
+    {
+
+    }
+
     protected virtual bool BeginDraw()
     {
         return true;
@@ -80,6 +84,11 @@ public abstract partial class Application : IDisposable
     protected internal abstract void Render();
 
     // Platform events
+    internal void OnPlatformReady(object? sender, EventArgs e)
+    {
+        Initialize();
+    }
+
     internal void OnDisplayChange()
     {
 
