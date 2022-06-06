@@ -38,10 +38,10 @@ static class Program
             _constantBuffer = Device.CreateConstantBuffer<Matrix4x4>();
 
             ReadOnlySpan<Color> pixels = stackalloc Color[16] {
-                new Color(0xFFFFFFFF), new Color(0x00000000), new Color(0xFFFFFFFF), new Color(0x00000000),
-                new Color(0x00000000), new Color(0xFFFFFFFF), new Color(0x00000000), new Color(0xFFFFFFFF),
-                new Color(0xFFFFFFFF), new Color(0x00000000), new Color(0xFFFFFFFF), new Color(0x00000000),
-                new Color(0x00000000), new Color(0xFFFFFFFF), new Color(0x00000000), new Color(0xFFFFFFFF),
+                0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+                0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+                0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+                0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
             };
             _texture = Device.CreateTexture2D(Format.R8G8B8A8_UNorm, 4, 4, pixels);
             _textureSRV = Device.CreateShaderResourceView(_texture);
@@ -92,6 +92,32 @@ static class Program
             MappedSubresource mappedResource = DeviceContext.Map(_constantBuffer, MapMode.WriteDiscard);
             Unsafe.Copy(mappedResource.DataPointer.ToPointer(), ref worldViewProjection);
             DeviceContext.Unmap(_constantBuffer, 0);
+
+            // Update texture data
+            Span<Color> pixels = stackalloc Color[16] {
+                (Color)Colors.Red,
+                0x00000000,
+                (Color)Colors.Green,
+                0x00000000,
+                0x00000000,
+                (Color)Colors.Blue,
+                0x00000000,
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0x00000000,
+                0xFFFFFFFF,
+                0x00000000,
+                0x00000000,
+                0xFFFFFFFF,
+                0x00000000,
+                0xFFFFFFFF,
+            };
+            var description =  _texture.Description;
+            FormatHelper.GetSurfaceInfo(description.Format, description.Width, description.Height,
+                out _,
+                out int rowPitch,
+                out int slicePitch);
+            DeviceContext.UpdateSubresource(pixels, _texture, 0, rowPitch, slicePitch);
 
             DeviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
             DeviceContext.VSSetShader(_vertexShader);

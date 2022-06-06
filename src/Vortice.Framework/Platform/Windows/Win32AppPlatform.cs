@@ -214,14 +214,14 @@ internal unsafe class Win32AppPlatform : AppPlatform
                         }
 
                         ShowWindow(hWnd, SW_SHOWNORMAL);
-                        SetWindowPos(hWnd, HWND_TOP, 0, 0, windowSize.Width, windowSize.Height, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
+                        SetWindowPos(hWnd, HWND.HWND_TOP, 0, 0, windowSize.Width, windowSize.Height, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
                     }
                     else
                     {
                         SetWindowLongPtr(hWnd, GWL_STYLE, (uint)WS_POPUP);
                         SetWindowLongPtr(hWnd, GWL_EXSTYLE, (uint)WS_EX_TOPMOST);
 
-                        SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+                        SetWindowPos(hWnd, HWND.HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 
                         ShowWindow(hWnd, SW_SHOWMAXIMIZED);
                     }
