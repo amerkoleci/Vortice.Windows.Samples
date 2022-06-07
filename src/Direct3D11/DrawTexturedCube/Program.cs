@@ -94,7 +94,7 @@ static class Program
             DeviceContext.Unmap(_constantBuffer, 0);
 
             // Update texture data
-            Span<Color> pixels = stackalloc Color[16] {
+            ReadOnlySpan<Color> pixels = stackalloc Color[16] {
                 (Color)Colors.Red,
                 0x00000000,
                 (Color)Colors.Green,
@@ -112,12 +112,7 @@ static class Program
                 0x00000000,
                 0xFFFFFFFF,
             };
-            var description =  _texture.Description;
-            FormatHelper.GetSurfaceInfo(description.Format, description.Width, description.Height,
-                out _,
-                out int rowPitch,
-                out int slicePitch);
-            DeviceContext.UpdateSubresource(pixels, _texture, 0, rowPitch, slicePitch);
+            DeviceContext.WriteTexture(_texture, 0, 0, pixels);
 
             DeviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
             DeviceContext.VSSetShader(_vertexShader);
