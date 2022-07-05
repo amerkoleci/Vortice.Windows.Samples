@@ -35,6 +35,7 @@ public abstract class D3D11Application : Application
     private readonly FeatureLevel _featureLevel;
 
     protected D3D11Application(
+        DeviceCreationFlags creationFlags = DeviceCreationFlags.BgraSupport,
         Format colorFormat = Format.B8G8R8A8_UNorm,
         Format depthStencilFormat = Format.D32_Float,
         int backBufferCount = 2)
@@ -55,7 +56,6 @@ public abstract class D3D11Application : Application
 
         using (IDXGIAdapter1 adapter = GetHardwareAdapter())
         {
-            DeviceCreationFlags creationFlags = DeviceCreationFlags.BgraSupport;
 #if DEBUG
             if (SdkLayersAvailable())
             {
@@ -143,7 +143,9 @@ public abstract class D3D11Application : Application
     /// <summary>
     /// Gets the viewport.
     /// </summary>
-    public Viewport Viewport => new Viewport(MainWindow.ClientSize.Width, MainWindow.ClientSize.Height);
+    public Viewport Viewport => new(MainWindow.ClientSize.Width, MainWindow.ClientSize.Height);
+
+    public bool DiscardViews { get; set; } = true;
 
     protected override void Dispose(bool dispose)
     {
@@ -328,15 +330,18 @@ public abstract class D3D11Application : Application
 
         Result result = SwapChain.Present(syncInterval, presentFlags);
 
-        // Discard the contents of the render target.
-        // This is a valid operation only when the existing contents will be entirely
-        // overwritten. If dirty or scroll rects are used, this call should be removed.
-        DeviceContext.DiscardView(ColorTextureView);
-
-        if (DepthStencilView != null)
+        if (DiscardViews)
         {
-            // Discard the contents of the depth stencil.
-            DeviceContext.DiscardView(DepthStencilView);
+            // Discard the contents of the render target.
+            // This is a valid operation only when the existing contents will be entirely
+            // overwritten. If dirty or scroll rects are used, this call should be removed.
+            DeviceContext.DiscardView(ColorTextureView);
+
+            if (DepthStencilView != null)
+            {
+                // Discard the contents of the depth stencil.
+                DeviceContext.DiscardView(DepthStencilView);
+            }
         }
 
         // If the device was reset we must completely reinitialize the renderer.

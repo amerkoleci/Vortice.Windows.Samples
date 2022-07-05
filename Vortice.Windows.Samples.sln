@@ -45,6 +45,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DrawCube", "src\Direct3D11\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DrawTexturedCubeFromFile", "src\Direct3D11\DrawTexturedCubeFromFile\DrawTexturedCubeFromFile.csproj", "{A63EDBC9-9F14-445A-8D32-B85FE713397C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaEnginePlayVideo", "src\MediaFoundation\MediaEnginePlayVideo\MediaEnginePlayVideo.csproj", "{E4BDACEA-95E0-4ADA-8206-795C47982B38}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -95,6 +97,10 @@ Global
 		{A63EDBC9-9F14-445A-8D32-B85FE713397C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A63EDBC9-9F14-445A-8D32-B85FE713397C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A63EDBC9-9F14-445A-8D32-B85FE713397C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4BDACEA-95E0-4ADA-8206-795C47982B38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4BDACEA-95E0-4ADA-8206-795C47982B38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4BDACEA-95E0-4ADA-8206-795C47982B38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4BDACEA-95E0-4ADA-8206-795C47982B38}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -110,6 +116,7 @@ Global
 		{27D73C4A-B96C-4B99-9871-459CF0287DC7} = {20478CEB-0051-4C7F-BF01-2D2E7552B4B1}
 		{AC13E295-D611-4D61-82A3-AF6414627CDB} = {20478CEB-0051-4C7F-BF01-2D2E7552B4B1}
 		{A63EDBC9-9F14-445A-8D32-B85FE713397C} = {20478CEB-0051-4C7F-BF01-2D2E7552B4B1}
+		{E4BDACEA-95E0-4ADA-8206-795C47982B38} = {43B5774C-3D54-4389-BB4A-DB9888BE7B5E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {85020CE7-9EF6-4502-94F6-98643E762B78}
