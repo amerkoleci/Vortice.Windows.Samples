@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Toolkit.Diagnostics" />
+    <PackageReference Include="CommunityToolkit.Diagnostics" />
     <PackageReference Include="Vortice.Direct3D11" />
     <PackageReference Include="Vortice.Direct3D12" />
 
