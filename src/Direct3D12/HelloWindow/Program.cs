@@ -11,7 +11,7 @@ static class Program
     {
         public HelloWindowApp()
         {
-            UseRenderPass = true;
+            UseRenderPass = false;
         }
 
         protected override void OnRender()
@@ -41,10 +41,10 @@ static class Program
             {
                 CommandList.ClearRenderTargetView(ColorTextureView, clearColor);
 
-                //if (dsvDescriptor.HasValue)
-                //{
-                //    _commandList.ClearDepthStencilView(dsvDescriptor.Value, ClearFlags.Depth, 1.0f, 0);
-                //}
+                if (DepthStencilView.HasValue)
+                {
+                    CommandList.ClearDepthStencilView(DepthStencilView.Value, ClearFlags.Depth, 1.0f, 0);
+                }
             }
         }
     }

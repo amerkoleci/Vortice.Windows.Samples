@@ -47,6 +47,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DrawTexturedCubeFromFile", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaEnginePlayVideo", "src\MediaFoundation\MediaEnginePlayVideo\MediaEnginePlayVideo.csproj", "{E4BDACEA-95E0-4ADA-8206-795C47982B38}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloTriangle", "src\Direct3D12\HelloTriangle\HelloTriangle.csproj", "{E0159369-3EF4-4BA3-9311-A2A401F5E3D9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -101,6 +103,10 @@ Global
 		{E4BDACEA-95E0-4ADA-8206-795C47982B38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E4BDACEA-95E0-4ADA-8206-795C47982B38}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E4BDACEA-95E0-4ADA-8206-795C47982B38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0159369-3EF4-4BA3-9311-A2A401F5E3D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0159369-3EF4-4BA3-9311-A2A401F5E3D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0159369-3EF4-4BA3-9311-A2A401F5E3D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0159369-3EF4-4BA3-9311-A2A401F5E3D9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,6 +123,7 @@ Global
 		{AC13E295-D611-4D61-82A3-AF6414627CDB} = {20478CEB-0051-4C7F-BF01-2D2E7552B4B1}
 		{A63EDBC9-9F14-445A-8D32-B85FE713397C} = {20478CEB-0051-4C7F-BF01-2D2E7552B4B1}
 		{E4BDACEA-95E0-4ADA-8206-795C47982B38} = {43B5774C-3D54-4389-BB4A-DB9888BE7B5E}
+		{E0159369-3EF4-4BA3-9311-A2A401F5E3D9} = {29DE9A3A-B79D-4B1B-933A-EEB3871A286F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {85020CE7-9EF6-4502-94F6-98643E762B78}

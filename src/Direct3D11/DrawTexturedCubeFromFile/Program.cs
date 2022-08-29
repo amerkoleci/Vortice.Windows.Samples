@@ -42,12 +42,12 @@ static class Program
             _textureSRV = Device.CreateShaderResourceView(_texture);
             _textureSampler = Device.CreateSamplerState(SamplerDescription.PointWrap);
 
-            Span<byte> vertexShaderByteCode = CompileBytecode("Cube.hlsl", "VSMain", "vs_4_0");
-            Span<byte> pixelShaderByteCode = CompileBytecode("Cube.hlsl", "PSMain", "ps_4_0");
+            ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode("Cube.hlsl", "VSMain", "vs_4_0");
+            ReadOnlyMemory<byte> pixelShaderByteCode = CompileBytecode("Cube.hlsl", "PSMain", "ps_4_0");
 
-            _vertexShader = Device.CreateVertexShader(vertexShaderByteCode);
-            _pixelShader = Device.CreatePixelShader(pixelShaderByteCode);
-            _inputLayout = Device.CreateInputLayout(VertexPositionNormalTexture.InputElements, vertexShaderByteCode);
+            _vertexShader = Device.CreateVertexShader(vertexShaderByteCode.Span);
+            _pixelShader = Device.CreatePixelShader(pixelShaderByteCode.Span);
+            _inputLayout = Device.CreateInputLayout(VertexPositionNormalTexture.InputElements, vertexShaderByteCode.Span);
 
             _clock = Stopwatch.StartNew();
         }
@@ -258,7 +258,7 @@ static class Program
             DeviceContext.DrawIndexed(36, 0, 0);
         }
 
-        private static Span<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
+        private static ReadOnlyMemory<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
         {
             string assetsPath = Path.Combine(AppContext.BaseDirectory, "Shaders");
             string shaderFile = Path.Combine(assetsPath, shaderName);
@@ -271,8 +271,7 @@ static class Program
 #else
             shaderFlags |= ShaderFlags.OptimizationLevel3;
 #endif
-            using Blob blob = Compiler.CompileFromFile(shaderFile, entryPoint, profile, shaderFlags);
-            return blob.AsSpan();
+            return Compiler.CompileFromFile(shaderFile, entryPoint, profile, shaderFlags);
         }
 
         // TODO: Remove once new release of Vortice gets out (Vortice.WIC.PixelFormat)

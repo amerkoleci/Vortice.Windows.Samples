@@ -10,12 +10,18 @@ namespace Vortice.Framework;
 
 public readonly struct VertexPositionColor
 {
-    public static unsafe readonly int SizeInBytes = sizeof(VertexPositionColor);
+    public static readonly unsafe int SizeInBytes = sizeof(VertexPositionColor);
 
-    public static InputElementDescription[] InputElements = new[]
+    public static readonly InputElementDescription[] InputElements = new[]
     {
         new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
         new InputElementDescription("COLOR", 0, Format.R32G32B32A32_Float, 12, 0)
+    };
+
+    public static readonly Direct3D12.InputElementDescription[] InputElementsD3D12 = new[]
+    {
+        new Direct3D12.InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
+        new Direct3D12.InputElementDescription("COLOR", 0, Format.R32G32B32A32_Float, 12, 0)
     };
 
     public VertexPositionColor(in Vector3 position, in Color4 color)

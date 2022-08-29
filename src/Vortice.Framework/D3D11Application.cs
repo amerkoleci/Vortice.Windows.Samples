@@ -203,16 +203,13 @@ public abstract class D3D11Application : Application
             factory6.Dispose();
         }
 
-        for (int adapterIndex = 0;
-            _dxgiFactory.EnumAdapters1(adapterIndex, out IDXGIAdapter1? adapter).Success;
-            adapterIndex++)
+        foreach (IDXGIAdapter1 adapter in _dxgiFactory.EnumAdapters1())
         {
             AdapterDescription1 desc = adapter.Description1;
 
             if ((desc.Flags & AdapterFlags.Software) != AdapterFlags.None)
             {
                 // Don't select the Basic Render Driver adapter.
-                adapter.Dispose();
                 continue;
             }
 

@@ -123,22 +123,18 @@ public abstract class D3D12Application : Application
             }
             else
             {
-                for (int adapterIndex = 0; _dxgiFactory.EnumAdapters1(adapterIndex, out IDXGIAdapter1 adapter).Success; adapterIndex++)
+                foreach (IDXGIAdapter1 adapter in  _dxgiFactory.EnumAdapters1())
                 {
                     AdapterDescription1 desc = adapter.Description1;
 
                     // Don't select the Basic Render Driver adapter.
                     if ((desc.Flags & AdapterFlags.Software) != AdapterFlags.None)
                     {
-                        adapter.Dispose();
-
                         continue;
                     }
 
                     if (D3D12CreateDevice(adapter, FeatureLevel.Level_11_0, out device).Success)
                     {
-                        adapter.Dispose();
-
                         break;
                     }
                 }
@@ -147,30 +143,30 @@ public abstract class D3D12Application : Application
 
         Device = device!;
 
-
 #if DEBUG
         // Configure debug device (if active).
-        ID3D12InfoQueue? d3dInfoQueue = Device.QueryInterfaceOrNull<ID3D12InfoQueue>();
-        if (d3dInfoQueue != null)
         {
-            d3dInfoQueue!.SetBreakOnSeverity(MessageSeverity.Corruption, true);
-            d3dInfoQueue!.SetBreakOnSeverity(MessageSeverity.Error, true);
-            MessageId[] hide = new[]
+            using ID3D12InfoQueue? d3dInfoQueue = Device.QueryInterfaceOrNull<ID3D12InfoQueue>();
+            if (d3dInfoQueue != null)
             {
-                MessageId.MapInvalidNullRange,
-                MessageId.UnmapInvalidNullRange,
-                // Workarounds for debug layer issues on hybrid-graphics systems
-                MessageId.ExecuteCommandListsWrongSwapChainBufferReference,
-                MessageId.ResourceBarrierMismatchingCommandListType,
-            };
+                d3dInfoQueue!.SetBreakOnSeverity(MessageSeverity.Corruption, true);
+                d3dInfoQueue!.SetBreakOnSeverity(MessageSeverity.Error, true);
+                MessageId[] hide = new[]
+                {
+                    MessageId.MapInvalidNullRange,
+                    MessageId.UnmapInvalidNullRange,
+                    // Workarounds for debug layer issues on hybrid-graphics systems
+                    MessageId.ExecuteCommandListsWrongSwapChainBufferReference,
+                    MessageId.ResourceBarrierMismatchingCommandListType,
+                };
 
-            Direct3D12.Debug.InfoQueueFilter filter = new();
-            filter.DenyList = new Direct3D12.Debug.InfoQueueFilterDescription
-            {
-                Ids = hide
-            };
-            d3dInfoQueue.AddStorageFilterEntries(filter);
-            d3dInfoQueue.Dispose();
+                Direct3D12.Debug.InfoQueueFilter filter = new();
+                filter.DenyList = new Direct3D12.Debug.InfoQueueFilterDescription
+                {
+                    Ids = hide
+                };
+                d3dInfoQueue.AddStorageFilterEntries(filter);
+            }
         }
 #endif
 
@@ -370,7 +366,7 @@ public abstract class D3D12Application : Application
 
         if (!UseRenderPass)
         {
-            CommandList.OMSetRenderTargets(ColorTextureView, false, DepthStencilView);
+            CommandList.OMSetRenderTargets(ColorTextureView, DepthStencilView);
         }
 
         CommandList.RSSetViewport(Viewport);

@@ -30,13 +30,13 @@ static class Program
             };
             _vertexBuffer = Device.CreateBuffer(triangleVertices, BindFlags.VertexBuffer);
 
-            Span<byte> vertexShaderByteCode = CompileBytecode("HelloTriangle.hlsl", "VSMain", "vs_4_0");
-            Span<byte> pixelShaderByteCode = CompileBytecode("HelloTriangle.hlsl", "PSMain", "ps_4_0");
+            ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode("HelloTriangle.hlsl", "VSMain", "vs_4_0");
+            ReadOnlyMemory<byte> pixelShaderByteCode = CompileBytecode("HelloTriangle.hlsl", "PSMain", "ps_4_0");
 
-            _vertexShader = Device.CreateVertexShader(vertexShaderByteCode);
-            _pixelShader = Device.CreatePixelShader(pixelShaderByteCode);
+            _vertexShader = Device.CreateVertexShader(vertexShaderByteCode.Span);
+            _pixelShader = Device.CreatePixelShader(pixelShaderByteCode.Span);
 
-            _inputLayout = Device.CreateInputLayout(VertexPositionColor.InputElements, vertexShaderByteCode);
+            _inputLayout = Device.CreateInputLayout(VertexPositionColor.InputElements, vertexShaderByteCode.Span);
         }
 
         protected override void Dispose(bool dispose)
@@ -65,14 +65,13 @@ static class Program
             DeviceContext.Draw(3, 0);
         }
 
-        private static Span<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
+        private static ReadOnlyMemory<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
         {
             string assetsPath = Path.Combine(AppContext.BaseDirectory, "Shaders");
             string shaderFile = Path.Combine(assetsPath, shaderName);
             //string shaderSource = File.ReadAllText(Path.Combine(assetsPath, shaderName));
 
-            using Blob blob = Compiler.CompileFromFile(shaderFile, entryPoint, profile);
-            return blob.AsSpan();
+            return Compiler.CompileFromFile(shaderFile, entryPoint, profile);
         }
     }
 
