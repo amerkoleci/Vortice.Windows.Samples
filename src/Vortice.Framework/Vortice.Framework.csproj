@@ -25,7 +25,7 @@
   <ItemGroup Condition="'$(_VorticeTargetPlatformIsWindows)' == 'True' AND $(TargetFramework.Contains('-windows10'))">
     <Compile Include="Platform\WinUI\**\*.cs" />
     <PackageReference Include="Microsoft.WindowsAppSDK" />
-    <PackageReference Include="Microsoft.Graphics.Win2D" />
+    <!--<PackageReference Include="Microsoft.Graphics.Win2D" />-->
   </ItemGroup>
 
   <ItemGroup>

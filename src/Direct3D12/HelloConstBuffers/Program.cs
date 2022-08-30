@@ -2,6 +2,7 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Vortice.Direct3D;
 using Vortice.Direct3D12;
 using Vortice.Dxc;
@@ -13,14 +14,23 @@ using Vortice.Mathematics;
 
 static class Program
 {
-    internal class HelloTriangle : D3D12Application
+    internal unsafe class HelloConstBuffers : D3D12Application
     {
+        private ID3D12DescriptorHeap _cbvHeap;
+        private int _cbvDescriptorSize;
+
         private ID3D12Resource _vertexBuffer;
+        private byte* _cbvData = default;
+        private SceneConstantBuffer _constantBufferData = default;
+        private ID3D12Resource _constantBuffer;
         private ID3D12RootSignature _rootSignature;
         private ID3D12PipelineState _pipelineState;
 
         protected override void Initialize()
         {
+            _cbvHeap = Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 1, DescriptorHeapFlags.ShaderVisible));
+            _cbvDescriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
+
             ReadOnlySpan<VertexPositionColor> triangleVertices = stackalloc VertexPositionColor[]
             {
                 new VertexPositionColor(new Vector3(0f, 0.5f, 0.0f), new Color4(1.0f, 0.0f, 0.0f, 1.0f)),
@@ -34,13 +44,28 @@ static class Program
             // code simplicity and because there are very few verts to actually transfer.
             _vertexBuffer = Device.CreateCommittedResource(
                 HeapType.Upload,
-                HeapFlags.None,
                 ResourceDescription.Buffer(VertexPositionColor.SizeInBytes * triangleVertices.Length),
                 ResourceStates.GenericRead
                 );
             _vertexBuffer.SetData(triangleVertices);
 
-            // Create empty root signature first
+            int constantBufferSize = sizeof(SceneConstantBuffer);
+            _constantBuffer = Device.CreateCommittedResource(
+                HeapType.Upload,
+                ResourceDescription.Buffer(constantBufferSize),
+                ResourceStates.GenericRead
+                );
+            fixed (byte** pConstantBufferDataBegin = &_cbvData)
+            {
+                _constantBuffer.Map(0, pConstantBufferDataBegin).CheckError();
+                Unsafe.CopyBlock(ref _cbvData[0], ref Unsafe.As<SceneConstantBuffer, byte>(ref _constantBufferData), (uint)sizeof(SceneConstantBuffer));
+            }
+
+            // Describe and create a constant buffer view.
+            ConstantBufferViewDescription cbvDesc = new(_constantBuffer);
+            Device.CreateConstantBufferView(cbvDesc, _cbvHeap.GetCPUDescriptorHandleForHeapStart());
+
+            // Create root signature first
             RootSignatureFlags rootSignatureFlags =
                 RootSignatureFlags.AllowInputAssemblerInputLayout |
                 RootSignatureFlags.DenyHullShaderRootAccess |
@@ -48,11 +73,16 @@ static class Program
                 RootSignatureFlags.DenyGeometryShaderRootAccess |
                 RootSignatureFlags.DenyPixelShaderRootAccess;
 
-            _rootSignature = Device.CreateRootSignature(new RootSignatureDescription1(rootSignatureFlags));
+            DescriptorRange1 cbvRange = new(DescriptorRangeType.ConstantBufferView, 1, 0, flags: DescriptorRangeFlags.DataStatic);
+
+            _rootSignature = Device.CreateRootSignature(
+                new RootSignatureDescription1(rootSignatureFlags,
+                new[] { new RootParameter1(new RootDescriptorTable1(cbvRange), ShaderVisibility.Vertex) })
+                );
 
             // Create pipeline
-            ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode(DxcShaderStage.Vertex, "HelloTriangle.hlsl", "VSMain");
-            ReadOnlyMemory<byte> pixelShaderByteCode = CompileBytecode(DxcShaderStage.Pixel, "HelloTriangle.hlsl", "PSMain");
+            ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode(DxcShaderStage.Vertex, $"{nameof(HelloConstBuffers)}.hlsl", "VSMain");
+            ReadOnlyMemory<byte> pixelShaderByteCode = CompileBytecode(DxcShaderStage.Pixel, $"{nameof(HelloConstBuffers)}.hlsl", "PSMain");
 
             GraphicsPipelineStateDescription psoDesc = new()
             {
@@ -75,6 +105,9 @@ static class Program
         {
             if (dispose)
             {
+                _cbvHeap.Dispose();
+                _constantBuffer.Unmap(0);
+                _constantBuffer.Dispose();
                 _vertexBuffer.Dispose();
                 _rootSignature.Dispose();
                 _pipelineState.Dispose();
@@ -85,6 +118,17 @@ static class Program
 
         protected override void OnRender()
         {
+            // Update constant buffer
+            const float translationSpeed = 0.005f;
+            const float OffsetBounds = 1.25f;
+
+            _constantBufferData.Offset.X += translationSpeed;
+            if (_constantBufferData.Offset.X > OffsetBounds)
+            {
+                _constantBufferData.Offset.X = -OffsetBounds;
+            }
+            Unsafe.CopyBlock(ref _cbvData[0], ref Unsafe.As<SceneConstantBuffer, byte>(ref _constantBufferData), (uint)sizeof(SceneConstantBuffer));
+
             Color4 clearColor = new(0.0f, 0.2f, 0.4f, 1.0f);
             CommandList.ClearRenderTargetView(ColorTextureView, clearColor);
 
@@ -97,6 +141,9 @@ static class Program
             CommandList.SetGraphicsRootSignature(_rootSignature);
             CommandList.SetPipelineState(_pipelineState);
 
+            CommandList.SetDescriptorHeaps(_cbvHeap);
+            CommandList.SetGraphicsRootDescriptorTable(0, _cbvHeap.GetGPUDescriptorHandleForHeapStart());
+
             int stride = VertexPositionColor.SizeInBytes;
             int vertexBufferSize = 3 * stride;
 
@@ -106,11 +153,17 @@ static class Program
             CommandList.IASetVertexBuffers(0, new VertexBufferView(_vertexBuffer.GPUVirtualAddress, vertexBufferSize, stride));
             CommandList.DrawInstanced(3, 1, 0, 0);
         }
+
+        public struct SceneConstantBuffer
+        {
+            public Vector4 Offset;
+            private unsafe fixed float _padding[60]; // Padding so the constant buffer is 256-byte aligned.
+        };
     }
 
     static void Main()
     {
-        using HelloTriangle app = new();
+        using HelloConstBuffers app = new();
         app.Run();
     }
 }

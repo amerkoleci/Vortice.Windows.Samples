@@ -2,6 +2,7 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Numerics;
+using Vortice.D3DCompiler;
 using Vortice.Direct3D;
 using Vortice.Direct3D12;
 using Vortice.Dxc;
@@ -13,7 +14,7 @@ using Vortice.Mathematics;
 
 static class Program
 {
-    internal class HelloTriangle : D3D12Application
+    internal class HelloTexture : D3D12Application
     {
         private ID3D12Resource _vertexBuffer;
         private ID3D12RootSignature _rootSignature;
@@ -41,18 +42,11 @@ static class Program
             _vertexBuffer.SetData(triangleVertices);
 
             // Create empty root signature first
-            RootSignatureFlags rootSignatureFlags =
-                RootSignatureFlags.AllowInputAssemblerInputLayout |
-                RootSignatureFlags.DenyHullShaderRootAccess |
-                RootSignatureFlags.DenyDomainShaderRootAccess |
-                RootSignatureFlags.DenyGeometryShaderRootAccess |
-                RootSignatureFlags.DenyPixelShaderRootAccess;
-
-            _rootSignature = Device.CreateRootSignature(new RootSignatureDescription1(rootSignatureFlags));
+            _rootSignature = Device.CreateRootSignature(new RootSignatureDescription1(RootSignatureFlags.AllowInputAssemblerInputLayout));
 
             // Create pipeline
-            ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode(DxcShaderStage.Vertex, "HelloTriangle.hlsl", "VSMain");
-            ReadOnlyMemory<byte> pixelShaderByteCode = CompileBytecode(DxcShaderStage.Pixel, "HelloTriangle.hlsl", "PSMain");
+            ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode(DxcShaderStage.Vertex, "HelloTexture.hlsl", "VSMain");
+            ReadOnlyMemory<byte> pixelShaderByteCode = CompileBytecode(DxcShaderStage.Pixel, "HelloTexture.hlsl", "PSMain");
 
             GraphicsPipelineStateDescription psoDesc = new()
             {
@@ -110,7 +104,7 @@ static class Program
 
     static void Main()
     {
-        using HelloTriangle app = new();
+        using HelloTexture app = new();
         app.Run();
     }
 }

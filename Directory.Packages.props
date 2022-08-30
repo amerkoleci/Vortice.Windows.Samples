@@ -13,7 +13,7 @@
   <!-- Package versions for package references across all projects -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <VorticeWindowsVersion>2.1.28-beta</VorticeWindowsVersion>
+    <VorticeWindowsVersion>2.1.30-beta</VorticeWindowsVersion>
   </PropertyGroup>
   
   <ItemGroup>
