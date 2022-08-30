@@ -7,4 +7,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <_VorticeTargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</_VorticeTargetPlatformIdentifier>
+    <_VorticeTargetPlatformIsWindows Condition="$(_VorticeTargetPlatformIdentifier.Contains('windows')) == 'True'">True</_VorticeTargetPlatformIsWindows>
+  </PropertyGroup>
+
 </Project>

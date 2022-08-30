@@ -5,10 +5,10 @@ using System.Numerics;
 using Vortice.D3DCompiler;
 using Vortice.Direct3D;
 using Vortice.Direct3D12;
+using Vortice.Dxc;
 using Vortice.DXGI;
 using Vortice.Framework;
 using Vortice.Mathematics;
-using ShaderBytecode = Vortice.Direct3D12.ShaderBytecode;
 
 #nullable disable
 
@@ -45,8 +45,8 @@ static class Program
             _rootSignature = Device.CreateRootSignature(new RootSignatureDescription1(RootSignatureFlags.AllowInputAssemblerInputLayout));
 
             // Create pipeline
-            ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode("HelloTriangle.hlsl", "VSMain", "vs_5_0");
-            ReadOnlyMemory<byte> pixelShaderByteCode = CompileBytecode("HelloTriangle.hlsl", "PSMain", "ps_5_0");
+            ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode(DxcShaderStage.Vertex, "HelloTriangle.hlsl", "VSMain");
+            ReadOnlyMemory<byte> pixelShaderByteCode = CompileBytecode(DxcShaderStage.Pixel, "HelloTriangle.hlsl", "PSMain");
 
             GraphicsPipelineStateDescription psoDesc = new()
             {
@@ -99,15 +99,6 @@ static class Program
 
             CommandList.IASetVertexBuffers(0, new VertexBufferView(_vertexBuffer.GPUVirtualAddress, vertexBufferSize, stride));
             CommandList.DrawInstanced(3, 1, 0, 0);
-        }
-
-        private static ReadOnlyMemory<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
-        {
-            string assetsPath = Path.Combine(AppContext.BaseDirectory, "Shaders");
-            string shaderFile = Path.Combine(assetsPath, shaderName);
-            //string shaderSource = File.ReadAllText(Path.Combine(assetsPath, shaderName));
-
-            return Compiler.CompileFromFile(shaderFile, entryPoint, profile);
         }
     }
 

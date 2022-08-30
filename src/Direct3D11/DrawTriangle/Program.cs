@@ -64,15 +64,6 @@ static class Program
             DeviceContext.IASetVertexBuffer(0, _vertexBuffer, VertexPositionColor.SizeInBytes);
             DeviceContext.Draw(3, 0);
         }
-
-        private static ReadOnlyMemory<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
-        {
-            string assetsPath = Path.Combine(AppContext.BaseDirectory, "Shaders");
-            string shaderFile = Path.Combine(assetsPath, shaderName);
-            //string shaderSource = File.ReadAllText(Path.Combine(assetsPath, shaderName));
-
-            return Compiler.CompileFromFile(shaderFile, entryPoint, profile);
-        }
     }
 
     static void Main()

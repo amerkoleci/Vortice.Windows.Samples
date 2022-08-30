@@ -31,12 +31,12 @@ internal class UWPWindow : Window, IFrameworkView
         _platform.Activate();
     }
 
-    private void OnCoreApplicationResuming(object sender, object e)
+    private void OnCoreApplicationResuming(object? sender, object e)
     {
         _platform.Resume();
     }
 
-    private void OnCoreApplicationSuspending(object sender, SuspendingEventArgs e)
+    private void OnCoreApplicationSuspending(object? sender, SuspendingEventArgs e)
     {
         SuspendingDeferral deferral = e.SuspendingOperation.GetDeferral();
         _platform.Suspend();

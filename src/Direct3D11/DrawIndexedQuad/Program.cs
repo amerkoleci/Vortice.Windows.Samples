@@ -69,15 +69,6 @@ static class Program
             DeviceContext.IASetIndexBuffer(_indexBuffer, Format.R16_UInt, 0);
             DeviceContext.DrawIndexed(6, 0, 0);
         }
-
-        private static ReadOnlyMemory<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
-        {
-            string assetsPath = Path.Combine(AppContext.BaseDirectory, "Shaders");
-            string shaderFile = Path.Combine(assetsPath, shaderName);
-            //string shaderSource = File.ReadAllText(Path.Combine(assetsPath, shaderName));
-
-            return Compiler.CompileFromFile(shaderFile, entryPoint, profile);
-        }
     }
 
     static void Main()

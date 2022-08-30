@@ -1,7 +1,13 @@
-<Project Sdk="MSBuild.Sdk.Extras">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0-windows;uap10.0.19041</TargetFrameworks>
+    <TargetFrameworks>net6.0-windows;net6.0-windows10.0.19041.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_VorticeTargetPlatformIsWindows)' == 'True' AND $(TargetFramework.Contains('-windows10'))">
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win10-x64;win10-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,18 +18,22 @@
     <None Include="Platform\**\*.*" />
   </ItemGroup>
 
-  <ItemGroup Condition=" $(TargetFramework.StartsWith('net6.0')) ">
+  <ItemGroup Condition="'$(_VorticeTargetPlatformIsWindows)' == 'True' AND $(TargetFramework.Contains('-windows10'))== 'False'">
     <Compile Include="Platform\Windows\**\*.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition=" $(TargetFramework.StartsWith('uap10.0')) ">
-    <Compile Include="Platform\UWP\**\*.cs" />
+  <ItemGroup Condition="'$(_VorticeTargetPlatformIsWindows)' == 'True' AND $(TargetFramework.Contains('-windows10'))">
+    <Compile Include="Platform\WinUI\**\*.cs" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Graphics.Win2D" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Diagnostics" />
     <PackageReference Include="Vortice.Direct3D11" />
     <PackageReference Include="Vortice.Direct3D12" />
+    <PackageReference Include="Vortice.D3DCompiler" />
+    <PackageReference Include="Vortice.Dxc" />
 
     <PackageReference Include="Microsoft.Windows.CsWin32" PrivateAssets="all" />
   </ItemGroup>

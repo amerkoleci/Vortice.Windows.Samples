@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using SharpGen.Runtime;
+using Vortice.D3DCompiler;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -359,5 +360,22 @@ public abstract class D3D11Application : Application
                 UpdateColorSpace();
             }
         }
+    }
+
+    protected static ReadOnlyMemory<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
+    {
+        string assetsPath = Path.Combine(AppContext.BaseDirectory, "Shaders");
+        string fileName = Path.Combine(assetsPath, shaderName);
+        //string shaderSource = File.ReadAllText(Path.Combine(assetsPath, shaderName));
+
+        ShaderFlags shaderFlags = ShaderFlags.EnableStrictness;
+#if DEBUG
+        shaderFlags |= ShaderFlags.Debug;
+        shaderFlags |= ShaderFlags.SkipValidation;
+#else
+        shaderFlags |= ShaderFlags.OptimizationLevel3;
+#endif
+
+        return Compiler.CompileFromFile(fileName, entryPoint, profile, shaderFlags);
     }
 }

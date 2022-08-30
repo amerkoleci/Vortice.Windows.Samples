@@ -258,22 +258,6 @@ static class Program
             DeviceContext.DrawIndexed(36, 0, 0);
         }
 
-        private static ReadOnlyMemory<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
-        {
-            string assetsPath = Path.Combine(AppContext.BaseDirectory, "Shaders");
-            string shaderFile = Path.Combine(assetsPath, shaderName);
-            //string shaderSource = File.ReadAllText(Path.Combine(assetsPath, shaderName));
-
-            ShaderFlags shaderFlags = ShaderFlags.EnableStrictness;
-#if DEBUG
-            shaderFlags |= ShaderFlags.Debug;
-            shaderFlags |= ShaderFlags.SkipValidation;
-#else
-            shaderFlags |= ShaderFlags.OptimizationLevel3;
-#endif
-            return Compiler.CompileFromFile(shaderFile, entryPoint, profile, shaderFlags);
-        }
-
         // TODO: Remove once new release of Vortice gets out (Vortice.WIC.PixelFormat)
         private static readonly Dictionary<Guid, Format> s_WICFormats = new()
         {
