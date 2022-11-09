@@ -25,6 +25,7 @@ public abstract class D3D12Application : Application
     private readonly Format _colorFormat;
     private readonly Format _depthStencilFormat;
     private readonly int _backBufferCount;
+    private readonly FeatureLevel _minFeatureLevel;
     private readonly bool _dxgiDebug;
     private IDXGIFactory4 _dxgiFactory;
     private readonly bool _isTearingSupported;
@@ -44,11 +45,13 @@ public abstract class D3D12Application : Application
 
     protected D3D12Application(Format colorFormat = Format.B8G8R8A8_UNorm,
         Format depthStencilFormat = Format.D32_Float,
-        int backBufferCount = 2)
+        int backBufferCount = 2,
+        FeatureLevel minFeatureLevel = FeatureLevel.Level_11_0)
     {
         _colorFormat = colorFormat;
         _depthStencilFormat = depthStencilFormat;
         _backBufferCount = backBufferCount;
+        _minFeatureLevel = minFeatureLevel;
 
 #if DEBUG
         // Enable the debug layer (requires the Graphics Tools "optional feature").
@@ -115,7 +118,7 @@ public abstract class D3D12Application : Application
                         continue;
                     }
 
-                    if (D3D12CreateDevice(adapter, FeatureLevel.Level_11_0, out device).Success)
+                    if (D3D12CreateDevice(adapter, _minFeatureLevel, out device).Success)
                     {
                         adapter.Dispose();
 
@@ -125,17 +128,21 @@ public abstract class D3D12Application : Application
             }
             else
             {
-                foreach (IDXGIAdapter1 adapter in _dxgiFactory.EnumAdapters1())
+                for (int adapterIndex = 0;
+                    _dxgiFactory.EnumAdapters1(adapterIndex, out IDXGIAdapter1? adapter).Success;
+                    adapterIndex++)
                 {
                     AdapterDescription1 desc = adapter.Description1;
 
                     // Don't select the Basic Render Driver adapter.
                     if ((desc.Flags & AdapterFlags.Software) != AdapterFlags.None)
                     {
+                        adapter.Dispose();
+
                         continue;
                     }
 
-                    if (D3D12CreateDevice(adapter, FeatureLevel.Level_11_0, out device).Success)
+                    if (D3D12CreateDevice(adapter, _minFeatureLevel, out device).Success)
                     {
                         break;
                     }
@@ -231,17 +238,16 @@ public abstract class D3D12Application : Application
 
         if (_depthStencilFormat != Format.Unknown)
         {
-            ResourceDescription depthStencilDesc = ResourceDescription.Texture2D(_depthStencilFormat, (ulong)swapChainDesc.Width, swapChainDesc.Height, 1, 1);
+            ResourceDescription depthStencilDesc = ResourceDescription.Texture2D(_depthStencilFormat, (uint)swapChainDesc.Width, (uint)swapChainDesc.Height, 1, 1);
             depthStencilDesc.Flags |= ResourceFlags.AllowDepthStencil;
-
-            ClearValue depthOptimizedClearValue = new ClearValue(_depthStencilFormat, 1.0f, 0);
 
             DepthStencilTexture = Device.CreateCommittedResource(
                 new HeapProperties(HeapType.Default),
                 HeapFlags.None,
                 depthStencilDesc,
                 ResourceStates.DepthWrite,
-                depthOptimizedClearValue);
+                new(_depthStencilFormat, 1.0f, 0)
+                );
             DepthStencilTexture.Name = "DepthStencil Texture";
 
             DepthStencilViewDescription dsViewDesc = new()
@@ -288,11 +294,12 @@ public abstract class D3D12Application : Application
     }
 
     public ID3D12GraphicsCommandList4 CommandList { get; }
+    public ID3D12CommandAllocator CommandAllocator => _commandAllocators[_backBufferIndex];
 
     /// <summary>
     /// Gets the viewport.
     /// </summary>
-    public Viewport Viewport => new Viewport(MainWindow.ClientSize.Width, MainWindow.ClientSize.Height);
+    public Viewport Viewport => new(MainWindow.ClientSize.Width, MainWindow.ClientSize.Height);
 
     public bool UseRenderPass { get; set; }
 
@@ -332,7 +339,7 @@ public abstract class D3D12Application : Application
         base.Dispose(dispose);
     }
 
-    private void WaitForGpu()
+    protected void WaitForGpu()
     {
         // Schedule a Signal command in the GPU queue.
         ulong fenceValue = _fenceValues[_backBufferIndex];
@@ -359,8 +366,8 @@ public abstract class D3D12Application : Application
 
     protected internal override void Render()
     {
-        _commandAllocators[_backBufferIndex].Reset();
-        CommandList.Reset(_commandAllocators[_backBufferIndex]);
+        CommandAllocator.Reset();
+        CommandList.Reset(CommandAllocator);
         CommandList.BeginEvent("Frame");
 
         // Indicate that the back buffer will be used as a render target.
@@ -486,7 +493,7 @@ public abstract class D3D12Application : Application
         string shaderSource = File.ReadAllText(fileName);
 
         DxcCompilerOptions options = new();
-        if(shaderModel != null)
+        if (shaderModel != null)
         {
             options.ShaderModel = shaderModel.Value;
         }

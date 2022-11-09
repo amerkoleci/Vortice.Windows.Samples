@@ -55,38 +55,36 @@ public abstract class D3D11Application : Application
             }
         }
 
-        using (IDXGIAdapter1 adapter = GetHardwareAdapter())
-        {
-#if DEBUG
-            if (SdkLayersAvailable())
-            {
-                creationFlags |= DeviceCreationFlags.Debug;
-            }
-#endif
+        using IDXGIAdapter1 adapter = GetHardwareAdapter();
 
-            if (D3D11CreateDevice(
-                adapter,
-                DriverType.Unknown,
+#if DEBUG
+        if (SdkLayersAvailable())
+        {
+            creationFlags |= DeviceCreationFlags.Debug;
+        }
+#endif
+        if (D3D11CreateDevice(
+            adapter,
+            DriverType.Unknown,
+            creationFlags,
+            s_featureLevels,
+            out ID3D11Device tempDevice, out _featureLevel, out ID3D11DeviceContext tempContext).Failure)
+        {
+            // If the initialization fails, fall back to the WARP device.
+            // For more information on WARP, see:
+            // http://go.microsoft.com/fwlink/?LinkId=286690
+            D3D11CreateDevice(
+                IntPtr.Zero,
+                DriverType.Warp,
                 creationFlags,
                 s_featureLevels,
-                out ID3D11Device tempDevice, out _featureLevel, out ID3D11DeviceContext tempContext).Failure)
-            {
-                // If the initialization fails, fall back to the WARP device.
-                // For more information on WARP, see:
-                // http://go.microsoft.com/fwlink/?LinkId=286690
-                D3D11CreateDevice(
-                    IntPtr.Zero,
-                    DriverType.Warp,
-                    creationFlags,
-                    s_featureLevels,
-                    out tempDevice, out _featureLevel, out tempContext).CheckError();
-            }
-
-            Device = tempDevice.QueryInterface<ID3D11Device1>();
-            DeviceContext = tempContext.QueryInterface<ID3D11DeviceContext1>();
-            tempContext.Dispose();
-            tempDevice.Dispose();
+                out tempDevice, out _featureLevel, out tempContext).CheckError();
         }
+
+        Device = tempDevice.QueryInterface<ID3D11Device1>();
+        DeviceContext = tempContext.QueryInterface<ID3D11DeviceContext1>();
+        tempContext.Dispose();
+        tempDevice.Dispose();
 
         IntPtr hwnd = MainWindow.Handle;
 
@@ -204,13 +202,17 @@ public abstract class D3D11Application : Application
             factory6.Dispose();
         }
 
-        foreach (IDXGIAdapter1 adapter in _dxgiFactory.EnumAdapters1())
+        for (int adapterIndex = 0;
+            _dxgiFactory.EnumAdapters1(adapterIndex, out IDXGIAdapter1? adapter).Success;
+            adapterIndex++)
         {
             AdapterDescription1 desc = adapter.Description1;
 
             if ((desc.Flags & AdapterFlags.Software) != AdapterFlags.None)
             {
                 // Don't select the Basic Render Driver adapter.
+                adapter.Dispose();
+
                 continue;
             }
 

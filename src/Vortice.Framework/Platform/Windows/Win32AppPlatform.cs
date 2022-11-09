@@ -178,8 +178,8 @@ internal unsafe class Win32AppPlatform : AppPlatform
                 if ((nint)lParam != 0)
                 {
                     MINMAXINFO* info = (MINMAXINFO*)((nint)lParam);
-                    info->ptMinTrackSize.x = 320;
-                    info->ptMinTrackSize.y = 200;
+                    info->ptMinTrackSize.X = 320;
+                    info->ptMinTrackSize.Y = 200;
                 }
                 break;
 
