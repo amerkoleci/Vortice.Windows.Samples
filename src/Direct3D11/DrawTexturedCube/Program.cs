@@ -1,17 +1,16 @@
 ﻿// Copyright © Amer Koleci and Contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
+#nullable disable
+
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using Vortice.D3DCompiler;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Framework;
 using Vortice.Mathematics;
-
-#nullable disable
 
 static class Program
 {
@@ -19,7 +18,8 @@ static class Program
     {
         private ID3D11Buffer _vertexBuffer;
         private ID3D11Buffer _indexBuffer;
-        private ID3D11Buffer _constantBuffer;
+        private D3D11ConstantBuffer<Matrix4x4> _constantBuffer;
+        private D3D11ConstantBuffer<LightBufferData> _lightConstantBuffer;
         private ID3D11Texture2D _texture;
         private ID3D11ShaderResourceView _textureSRV;
         private ID3D11SamplerState _textureSampler;
@@ -35,13 +35,26 @@ static class Program
             _vertexBuffer = Device.CreateBuffer(mesh.Vertices, BindFlags.VertexBuffer);
             _indexBuffer = Device.CreateBuffer(mesh.Indices, BindFlags.IndexBuffer);
 
-            _constantBuffer = Device.CreateConstantBuffer<Matrix4x4>();
+            _constantBuffer = new(Device);
+            _lightConstantBuffer = new(Device);
 
             ReadOnlySpan<Color> pixels = stackalloc Color[16] {
-                0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-                0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-                0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-                0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+                0xFFFFFFFF,
+                0x00000000,
+                0xFFFFFFFF,
+                0x00000000,
+                0x00000000,
+                0xFFFFFFFF,
+                0x00000000,
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0x00000000,
+                0xFFFFFFFF,
+                0x00000000,
+                0x00000000,
+                0xFFFFFFFF,
+                0x00000000,
+                0xFFFFFFFF,
             };
             _texture = Device.CreateTexture2D(Format.R8G8B8A8_UNorm, 4, 4, pixels);
             _textureSRV = Device.CreateShaderResourceView(_texture);
@@ -64,6 +77,7 @@ static class Program
                 _vertexBuffer.Dispose();
                 _indexBuffer.Dispose();
                 _constantBuffer.Dispose();
+                _lightConstantBuffer.Dispose();
                 _textureSRV.Dispose();
                 _textureSampler.Dispose();
                 _texture.Dispose();
@@ -89,9 +103,11 @@ static class Program
             Matrix4x4 worldViewProjection = Matrix4x4.Multiply(world, viewProjection);
 
             // Update constant buffer data
-            MappedSubresource mappedResource = DeviceContext.Map(_constantBuffer, MapMode.WriteDiscard);
-            Unsafe.Copy(mappedResource.DataPointer.ToPointer(), ref worldViewProjection);
-            DeviceContext.Unmap(_constantBuffer, 0);
+            _constantBuffer.SetData(DeviceContext, ref worldViewProjection);
+
+            float Luminosity = 0.5f;
+            LightBufferData lightData = new(Vector3.Zero, 1.0f, 0.0f, 0.0f);
+            _lightConstantBuffer.SetData(DeviceContext, ref lightData);
 
             // Update texture data
             ReadOnlySpan<Color> pixels = stackalloc Color[16] {
@@ -119,11 +135,24 @@ static class Program
             DeviceContext.PSSetShader(_pixelShader);
             DeviceContext.IASetInputLayout(_inputLayout);
             DeviceContext.VSSetConstantBuffer(0, _constantBuffer);
+            DeviceContext.PSSetConstantBuffer(1, _lightConstantBuffer);
             DeviceContext.PSSetShaderResource(0, _textureSRV);
             DeviceContext.PSSetSampler(0, _textureSampler);
             DeviceContext.IASetVertexBuffer(0, _vertexBuffer, VertexPositionNormalTexture.SizeInBytes);
             DeviceContext.IASetIndexBuffer(_indexBuffer, Format.R16_UInt, 0);
             DeviceContext.DrawIndexed(36, 0, 0);
+        }
+
+        struct LightBufferData
+        {
+            public Vector4 Position;
+            public Vector4 Color;
+
+            public LightBufferData(Vector3 position, float r, float g, float b)
+            {
+                Position = new Vector4(position, 1);
+                Color = new Vector4(r, g, b, 1);
+            }
         }
     }
 

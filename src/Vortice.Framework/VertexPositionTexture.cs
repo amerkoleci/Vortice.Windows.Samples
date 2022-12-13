@@ -4,7 +4,6 @@
 using System.Numerics;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
-using Vortice.Mathematics;
 
 namespace Vortice.Framework;
 
