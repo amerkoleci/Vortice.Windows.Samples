@@ -2,6 +2,7 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Diagnostics;
+using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Vortice.D3DCompiler;
@@ -61,7 +62,7 @@ static class Program
             using IWICBitmapDecoder decoder = wicFactory.CreateDecoderFromFileName(textureFile);
             using IWICBitmapFrameDecode frame = decoder.GetFrame(0);
 
-            SizeI size = frame.Size;
+            Size size = frame.Size;
 
             // Determine format
             Guid pixelFormat = frame.PixelFormat;

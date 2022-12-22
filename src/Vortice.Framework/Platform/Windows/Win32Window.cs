@@ -10,6 +10,7 @@ using static Windows.Win32.UI.WindowsAndMessaging.SYSTEM_METRICS_INDEX;
 using static Windows.Win32.UI.WindowsAndMessaging.SHOW_WINDOW_CMD;
 using System.Runtime.InteropServices;
 using Vortice.Mathematics;
+using System.Drawing;
 
 namespace Vortice.Framework;
 
@@ -17,7 +18,7 @@ internal unsafe class Win32Window : Window, IDisposable
 {
     private readonly Win32AppPlatform _platform;
     private readonly HWND _hwnd;
-    private SizeI _clientSize;
+    private Size _clientSize;
     private bool _inSizeMove;
 
     public Win32Window(Win32AppPlatform platform, string title)
@@ -68,7 +69,7 @@ internal unsafe class Win32Window : Window, IDisposable
     }
 
     public override string Title { get; set; }
-    public override SizeI ClientSize => _clientSize;
+    public override Size ClientSize => _clientSize;
     public override IntPtr Handle => _hwnd;
     public bool InSizeMove => _inSizeMove;
 

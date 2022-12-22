@@ -4,7 +4,6 @@
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Framework;
-using Vortice.Mathematics;
 using static Vortice.MediaFoundation.MediaFactory;
 
 static class Program
@@ -16,7 +15,7 @@ static class Program
         private readonly MFByteStream _mfStream;
         private readonly ManualResetEvent _eventReadyToPlay = new(false);
         private readonly IDXGISurface _colorTextureSurface;
-        private readonly SizeI _videoSize;
+        private readonly Size _videoSize;
 
         public VideoApp(string videoFile)
             : base(DeviceCreationFlags.BgraSupport | DeviceCreationFlags.VideoSupport)

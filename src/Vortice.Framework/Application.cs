@@ -1,6 +1,7 @@
 // Copyright © Amer Koleci and Contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
+using System.Drawing;
 using Vortice.Mathematics;
 
 namespace Vortice.Framework;
@@ -25,7 +26,7 @@ public abstract partial class Application : IDisposable
 
     public bool IsDisposed { get; private set; }
     public Window MainWindow => _platform.MainWindow;
-    public virtual SizeI DefaultSize => new(1280, 720);
+    public virtual Size DefaultSize => new(1280, 720);
     public bool EnableVerticalSync { get; set; } = true;
     public float AspectRatio => (float)MainWindow.ClientSize.Width / MainWindow.ClientSize.Height;
 
@@ -58,6 +59,11 @@ public abstract partial class Application : IDisposable
         }
     }
 
+    public void Exit()
+    {
+        _platform.RequestExit();
+    }
+
     internal void Tick()
     {
         if (!BeginDraw())
@@ -82,12 +88,25 @@ public abstract partial class Application : IDisposable
     {
     }
 
+    protected virtual void OnKeyboardEvent(KeyboardKey key, bool pressed)
+    {
+        if(key == KeyboardKey.Escape && pressed)
+        {
+            Exit();
+        }
+    }
+
     protected internal abstract void Render();
 
     // Platform events
     internal void OnPlatformReady(object? sender, EventArgs e)
     {
         Initialize();
+    }
+
+    internal void OnPlatformKeyboardEvent(KeyboardKey key, bool pressed)
+    {
+        OnKeyboardEvent(key, pressed);
     }
 
     internal void OnDisplayChange()
