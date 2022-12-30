@@ -2,12 +2,14 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Mathematics;
 
 namespace Vortice.Framework;
 
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 public readonly struct VertexPositionColor
 {
     public static readonly unsafe int SizeInBytes = sizeof(VertexPositionColor);
