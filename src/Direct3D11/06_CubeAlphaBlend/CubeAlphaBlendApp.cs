@@ -19,6 +19,8 @@ public class CubeAlphaBlendApp : D3D11Application
     private ID3D11VertexShader _vertexShader;
     private ID3D11PixelShader _pixelShader;
     private ID3D11InputLayout _inputLayout;
+    private ID3D11RasterizerState _rasterizerState;
+    private ID3D11DepthStencilState _depthStencilState;
     private ID3D11BlendState _blendState;
     private Stopwatch _clock;
 
@@ -35,7 +37,9 @@ public class CubeAlphaBlendApp : D3D11Application
         _pixelShader = Device.CreatePixelShader(pixelShaderByteCode.Span);
         _inputLayout = Device.CreateInputLayout(VertexPositionColor.InputElements, vertexShaderByteCode.Span);
 
-        _blendState = Device.CreateBlendState(new BlendDescription(Blend.One, Blend.SourceAlpha, Blend.One, Blend.InverseSourceAlpha));
+        _rasterizerState = Device.CreateRasterizerState(RasterizerDescription.CullNone);
+        _depthStencilState = Device.CreateDepthStencilState(DepthStencilDescription.Default);
+        _blendState = Device.CreateBlendState(BlendDescription.NonPremultiplied);
 
         _clock = Stopwatch.StartNew();
     }
@@ -50,6 +54,8 @@ public class CubeAlphaBlendApp : D3D11Application
             _vertexShader.Dispose();
             _pixelShader.Dispose();
             _inputLayout.Dispose();
+            _rasterizerState.Dispose();
+            _depthStencilState.Dispose();
             _blendState.Dispose();
         }
 
@@ -58,7 +64,7 @@ public class CubeAlphaBlendApp : D3D11Application
 
     protected unsafe override void OnRender()
     {
-        DeviceContext.ClearRenderTargetView(ColorTextureView, Colors.CornflowerBlue);
+        DeviceContext.ClearRenderTargetView(ColorTextureView, new Color4(0.5f, 0.5f, 0.5f, 1.0f));
         DeviceContext.ClearDepthStencilView(DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
 
         float time = _clock.ElapsedMilliseconds / 1000.0f;
@@ -72,6 +78,10 @@ public class CubeAlphaBlendApp : D3D11Application
         // Update constant buffer data
         _constantBuffer.SetData(DeviceContext, ref worldViewProjection);
 
+        DeviceContext.RSSetState(_rasterizerState);
+        DeviceContext.OMSetDepthStencilState(_depthStencilState);
+        DeviceContext.OMSetBlendState(_blendState);
+
         DeviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         DeviceContext.VSSetShader(_vertexShader);
         DeviceContext.PSSetShader(_pixelShader);
@@ -79,7 +89,7 @@ public class CubeAlphaBlendApp : D3D11Application
         DeviceContext.VSSetConstantBuffer(0, _constantBuffer);
         DeviceContext.IASetVertexBuffer(0, _vertexBuffer, VertexPositionColor.SizeInBytes);
         DeviceContext.IASetIndexBuffer(_indexBuffer, Format.R16_UInt, 0);
-        DeviceContext.OMSetBlendState(_blendState);
+        
 
         DeviceContext.DrawIndexed(36, 0, 0);
     }
