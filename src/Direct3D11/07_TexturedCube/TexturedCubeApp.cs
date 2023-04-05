@@ -52,7 +52,7 @@ public unsafe class TexturedCubeApp : D3D11Application
             0x00000000,
             0xFFFFFFFF,
         };
-        _texture = Device.CreateTexture2D(Format.R8G8B8A8_UNorm, 4, 4, pixels);
+        _texture = Device.CreateTexture2D(pixels, Format.R8G8B8A8_UNorm, 4, 4, mipLevels: 1);
         _textureSRV = Device.CreateShaderResourceView(_texture);
         _textureSampler = Device.CreateSamplerState(SamplerDescription.PointWrap);
 

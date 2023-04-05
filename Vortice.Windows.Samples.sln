@@ -57,6 +57,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloTexture", "src\Direct3
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloConstBuffers", "src\Direct3D12\HelloConstBuffers\HelloConstBuffers.csproj", "{601F94FB-C259-4E3B-B8EA-72918B4206F0}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "09_Mipmapping", "src\Direct3D11\09_Mipmapping\09_Mipmapping.csproj", "{1177F4CE-D796-459B-946C-81D62F655836}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -131,6 +133,10 @@ Global
 		{601F94FB-C259-4E3B-B8EA-72918B4206F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{601F94FB-C259-4E3B-B8EA-72918B4206F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{601F94FB-C259-4E3B-B8EA-72918B4206F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1177F4CE-D796-459B-946C-81D62F655836}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1177F4CE-D796-459B-946C-81D62F655836}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1177F4CE-D796-459B-946C-81D62F655836}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1177F4CE-D796-459B-946C-81D62F655836}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -152,6 +158,7 @@ Global
 		{E0159369-3EF4-4BA3-9311-A2A401F5E3D9} = {29DE9A3A-B79D-4B1B-933A-EEB3871A286F}
 		{0262B776-F7F6-4DA8-AF25-488E17607DF6} = {29DE9A3A-B79D-4B1B-933A-EEB3871A286F}
 		{601F94FB-C259-4E3B-B8EA-72918B4206F0} = {29DE9A3A-B79D-4B1B-933A-EEB3871A286F}
+		{1177F4CE-D796-459B-946C-81D62F655836} = {20478CEB-0051-4C7F-BF01-2D2E7552B4B1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {85020CE7-9EF6-4502-94F6-98643E762B78}

@@ -380,4 +380,37 @@ public abstract class D3D11Application : Application
 
         return Compiler.CompileFromFile(fileName, entryPoint, profile, shaderFlags);
     }
+
+    protected unsafe (ID3D11Texture2D, ID3D11ShaderResourceView) LoadTexture(string filePath, int mipLevels = 0)
+    {
+        Image image = Image.FromFile(filePath);
+
+        ID3D11Texture2D texture;
+        if (mipLevels == 0)
+        {
+            texture = Device.CreateTexture2D(image.Format, image.Width, image.Height,
+               mipLevels: 0,
+               bindFlags: BindFlags.ShaderResource | BindFlags.RenderTarget,
+               miscFlags: ResourceOptionFlags.GenerateMips);
+
+            fixed (byte* pData = image.Data.Span)
+            {
+                DeviceContext.UpdateSubresource(texture, 0, null, (IntPtr)pData, image.RowPitch, 0);
+            }
+        }
+        else
+        {
+            texture = Device.CreateTexture2D(image.Data.Span, image.Format, image.Width, image.Height, mipLevels: 1);
+        }
+
+        ShaderResourceViewDescription srvDesc = new(texture, ShaderResourceViewDimension.Texture2D, image.Format);
+        ID3D11ShaderResourceView srv = Device.CreateShaderResourceView(texture);
+
+        if (mipLevels == 0)
+        {
+            DeviceContext.GenerateMips(srv);
+        }
+
+        return (texture, srv);
+    }
 }
