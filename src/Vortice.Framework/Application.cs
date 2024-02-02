@@ -1,7 +1,6 @@
-// Copyright © Amer Koleci and Contributors.
+// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
-using System.Drawing;
 using Vortice.Mathematics;
 
 namespace Vortice.Framework;
@@ -26,7 +25,7 @@ public abstract partial class Application : IDisposable
 
     public bool IsDisposed { get; private set; }
     public Window MainWindow => _platform.MainWindow;
-    public virtual Size DefaultSize => new(1280, 720);
+    public virtual SizeI DefaultSize => new(1280, 720);
     public bool EnableVerticalSync { get; set; } = true;
     public float AspectRatio => (float)MainWindow.ClientSize.Width / MainWindow.ClientSize.Height;
 

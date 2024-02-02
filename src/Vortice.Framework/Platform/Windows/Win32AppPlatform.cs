@@ -1,4 +1,4 @@
-// Copyright © Amer Koleci and Contributors.
+// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using win32 = global::Windows.Win32;
@@ -424,10 +424,10 @@ internal unsafe class Win32AppPlatform : AppPlatform
                         SetWindowLongPtr(hWnd, GWL_STYLE, (uint)WS_OVERLAPPEDWINDOW);
                         SetWindowLongPtr(hWnd, GWL_EXSTYLE, IntPtr.Zero);
 
-                        Size windowSize = new(800, 600);
-                        if (D3D12Application.Current != null)
+                        SizeI windowSize = new(800, 600);
+                        if (Application.Current != null)
                         {
-                            windowSize = D3D12Application.Current.DefaultSize;
+                            windowSize = Application.Current.DefaultSize;
                         }
 
                         ShowWindow(hWnd, SW_SHOWNORMAL);

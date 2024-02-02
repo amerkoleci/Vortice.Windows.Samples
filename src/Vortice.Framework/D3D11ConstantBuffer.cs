@@ -1,4 +1,4 @@
-// Copyright © Amer Koleci and Contributors.
+// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Numerics;
@@ -58,6 +58,13 @@ public sealed unsafe class D3D11ConstantBuffer<T> : DisposableObject
     {
         MappedSubresource mappedResource = deviceContext.Map(Buffer, MapMode.WriteDiscard);
         Unsafe.Copy(mappedResource.DataPointer.ToPointer(), ref data);
+        deviceContext.Unmap(Buffer, 0);
+    }
+
+    public void SetData(ID3D11DeviceContext deviceContext, ReadOnlySpan<T> data)
+    {
+        MappedSubresource mappedResource = deviceContext.Map(Buffer, MapMode.WriteDiscard);
+        data.CopyTo(new Span<T>(mappedResource.DataPointer.ToPointer(), data.Length));
         deviceContext.Unmap(Buffer, 0);
     }
 

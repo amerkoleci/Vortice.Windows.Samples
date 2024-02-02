@@ -1,9 +1,9 @@
-﻿// Copyright © Amer Koleci and Contributors.
+﻿// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Diagnostics;
-using System.Drawing;
 using Vortice.DXGI;
+using Vortice.Mathematics;
 using Vortice.WIC;
 
 namespace Vortice.Framework
@@ -40,7 +40,7 @@ namespace Vortice.Framework
             using IWICBitmapDecoder decoder = ImagingFactory().CreateDecoderFromStream(stream);
             using IWICBitmapFrameDecode frame = decoder.GetFrame(0);
 
-            Size size = frame.Size;
+            SizeI size = frame.Size;
 
             // Determine format
             Guid pixelFormat = frame.PixelFormat;

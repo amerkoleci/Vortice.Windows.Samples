@@ -1,4 +1,4 @@
-// Copyright © Amer Koleci and Contributors.
+// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using Windows.Win32.Foundation;
@@ -10,7 +10,6 @@ using static Windows.Win32.UI.WindowsAndMessaging.SYSTEM_METRICS_INDEX;
 using static Windows.Win32.UI.WindowsAndMessaging.SHOW_WINDOW_CMD;
 using System.Runtime.InteropServices;
 using Vortice.Mathematics;
-using System.Drawing;
 
 namespace Vortice.Framework;
 
@@ -18,7 +17,7 @@ internal unsafe class Win32Window : Window, IDisposable
 {
     private readonly Win32AppPlatform _platform;
     private readonly HWND _hwnd;
-    private Size _clientSize;
+    private SizeI _clientSize;
     private bool _inSizeMove;
 
     public Win32Window(Win32AppPlatform platform, string title)
@@ -69,7 +68,7 @@ internal unsafe class Win32Window : Window, IDisposable
     }
 
     public override string Title { get; set; }
-    public override Size ClientSize => _clientSize;
+    public override SizeI ClientSize => _clientSize;
     public override IntPtr Handle => _hwnd;
     public bool InSizeMove => _inSizeMove;
 

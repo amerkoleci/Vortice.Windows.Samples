@@ -1,4 +1,4 @@
-// Copyright © Amer Koleci and Contributors.
+// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Numerics;
@@ -10,16 +10,16 @@ using Vortice.Mathematics;
 namespace Vortice.Framework;
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public readonly struct VertexPositionColorTexture
+public readonly record struct VertexPositionColorTexture
 {
-    public static unsafe readonly int SizeInBytes = sizeof(VertexPositionColorTexture);
+    public static readonly unsafe int SizeInBytes = sizeof(VertexPositionColorTexture);
 
-    public static InputElementDescription[] InputElements = new[]
-    {
+    public static InputElementDescription[] InputElements =
+    [
         new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
         new InputElementDescription("COLOR", 0, Format.R32G32B32A32_Float, 12, 0),
         new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 28, 0)
-    };
+    ];
 
     public VertexPositionColorTexture(in Vector3 position, in Color4 color, in Vector2 textureCoordinate)
     {

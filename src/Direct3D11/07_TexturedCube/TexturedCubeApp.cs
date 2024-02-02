@@ -24,7 +24,7 @@ public unsafe class TexturedCubeApp : D3D11Application
     private ID3D11PixelShader _pixelShader;
     private ID3D11InputLayout _inputLayout;
     private Stopwatch _clock;
-    private bool _dynamicTexture;
+    private readonly bool _dynamicTexture;
 
     protected override void Initialize()
     {

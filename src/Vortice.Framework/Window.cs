@@ -1,7 +1,6 @@
-// Copyright © Amer Koleci and Contributors.
+// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
-using System.Drawing;
 using Vortice.Mathematics;
 
 namespace Vortice.Framework;
@@ -9,7 +8,7 @@ namespace Vortice.Framework;
 public abstract class Window
 {
     public abstract string Title { get; set; }
-    public abstract Size ClientSize { get; }
+    public abstract SizeI ClientSize { get; }
     public abstract IntPtr Handle { get; }
 
 
