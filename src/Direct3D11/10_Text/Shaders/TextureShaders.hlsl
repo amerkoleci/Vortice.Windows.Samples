@@ -14,7 +14,7 @@ SamplerState TextureSampler: register(s0);
 PSInput VSMain(in VSInput input) {
     PSInput result;
     result.Position = float4(input.Position, 1);
-    result.Texcoord = input.Texcoord * 5.0f;
+    result.Texcoord = input.Texcoord;
     return result;
 }
 
