@@ -141,7 +141,7 @@ internal class DrawTextApp : D3D11Application
         // the dxgi runtime layer provides the video memory sharing mechanism to allow
         // Direct2D and Direct3D to work together. One way to use the two technologies
         // together is by obtaining IDXGISurface and then use CreateDxgiSurfaceRenderTarget
-        // to create an ID2D1RenderTarget, which can then be draw to with Direct2D.
+        // to create an ID2D1RenderTarget, which can then be drawn to with Direct2D.
 
         //IDXGISurface1 dxgiSurface = ID3D11Texture2D.QueryInterface<IDXGISurface1>(target); not supported
         IDXGISurface1 dxgiSurface = target.QueryInterface<IDXGISurface1>();
