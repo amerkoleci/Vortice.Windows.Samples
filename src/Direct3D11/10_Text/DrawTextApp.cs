@@ -1,8 +1,6 @@
-﻿// Copyright © Amer Koleci and Contributors.
+﻿// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
-//using System.Drawing;
-using System.Drawing;
 using System.Numerics;
 using Vortice.Direct2D1;
 using Vortice.Direct3D;
@@ -11,8 +9,6 @@ using Vortice.DirectWrite;
 using Vortice.DXGI;
 using Vortice.Framework;
 using Vortice.Mathematics;
-
-namespace Text;
 
 internal class DrawTextApp : D3D11Application
 {
@@ -27,23 +23,21 @@ internal class DrawTextApp : D3D11Application
     private ID3D11SamplerState _textureSampler;
 
     // text related objects
-    static ID2D1Device _device2d;
-    static IDWriteFactory _directWriteFactory;
-    static IDWriteTextFormat _textFormat;
-    static ID2D1Factory7 _direct2dFactory;
-    static ID2D1HwndRenderTarget _renderTarget2dHwnd;
-    static ID2D1SolidColorBrush _brush;
-    static ID2D1RenderTarget _renderTarget2d;
+    private IDWriteFactory _directWriteFactory;
+    private IDWriteTextFormat _textFormat;
+    private ID2D1Factory _direct2dFactory;
+    private ID2D1SolidColorBrush _brush;
+    private ID2D1RenderTarget _renderTarget2d;
 
     protected override void Initialize()
     {
         ReadOnlySpan<VertexPositionTexture> source =
-          [
-              new VertexPositionTexture(new Vector3(-0.5f, 0.5f, 0.0f), new Vector2(0, 0)),
-              new VertexPositionTexture(new Vector3(0.5f, 0.5f, 0.0f), new Vector2(1, 0)),
-              new VertexPositionTexture(new Vector3(0.5f, -0.5f, 0.0f), new Vector2(1, 1)),
-              new VertexPositionTexture(new Vector3(-0.5f, -0.5f, 0.0f), new Vector2(0, 1))
-          ];
+        [
+            new VertexPositionTexture(new Vector3(-0.5f, 0.5f, 0.0f), new Vector2(0, 0)),
+            new VertexPositionTexture(new Vector3(0.5f, 0.5f, 0.0f), new Vector2(1, 0)),
+            new VertexPositionTexture(new Vector3(0.5f, -0.5f, 0.0f), new Vector2(1, 1)),
+            new VertexPositionTexture(new Vector3(-0.5f, -0.5f, 0.0f), new Vector2(0, 1))
+        ];
 
         _vertexBuffer = Device.CreateBuffer(source, BindFlags.VertexBuffer);
 
@@ -112,7 +106,6 @@ internal class DrawTextApp : D3D11Application
             _texture.Dispose();
             _textureSampler.Dispose();
             _textFormat.Dispose();
-            _renderTarget2dHwnd?.Dispose();
             _brush?.Dispose();
             _direct2dFactory.Dispose();
             _directWriteFactory.Dispose();
@@ -142,7 +135,7 @@ internal class DrawTextApp : D3D11Application
 
     private void DrawText(string text, ID3D11Texture2D target)
     {
-        IDXGISurface1 dxgiSurface = ID3D11Texture2D.QueryInterface<IDXGISurface1>(target);
+        using IDXGISurface1 dxgiSurface = target.QueryInterface<IDXGISurface1>();
         RenderTargetProperties rtvProps = new()
         {
             DpiX = 0,

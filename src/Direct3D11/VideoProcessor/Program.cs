@@ -1,4 +1,4 @@
-﻿// Copyright © Amer Koleci and Contributors.
+﻿// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using SharpGen.Runtime;
@@ -9,25 +9,23 @@ using Vortice.DXGI;
 using static System.Console;
 using static Vortice.Direct3D11.D3D11;
 
-FeatureLevel[] featureLevels;
-List<FeatureLevel> featureLevelsWin10 = new()
-{
+FeatureLevel[] featureLevelsWin10 =
+[
     FeatureLevel.Level_12_1,
     FeatureLevel.Level_12_0
-};
+];
 
-List<FeatureLevel> featureLevelsWin8 = new()
-{
+FeatureLevel[] featureLevelsWin8 =
+[
     FeatureLevel.Level_11_1
-};
+];
 
-List<FeatureLevel> featureLevelsWin7 = new()
-{
+FeatureLevel[] featureLevelsWin7 =
+[
     FeatureLevel.Level_11_0,
     FeatureLevel.Level_10_1,
     FeatureLevel.Level_10_0
-};
-
+];
 
 VideoProcessorContentDescription videoProcessorContentDescription = new VideoProcessorContentDescription()
 {
@@ -40,23 +38,24 @@ VideoProcessorContentDescription videoProcessorContentDescription = new VideoPro
 
 ID3D11VideoProcessor videoProcessor;
 
+List<FeatureLevel> featureLevels = new();
 if (OperatingSystem.IsWindowsVersionAtLeast(10))
 {
-    featureLevelsWin10.AddRange(featureLevelsWin8);
-    featureLevelsWin10.AddRange(featureLevelsWin7);
-    featureLevels = featureLevelsWin10.ToArray();
+    featureLevels.AddRange(featureLevelsWin10);
+    featureLevels.AddRange(featureLevelsWin8);
+    featureLevels.AddRange(featureLevelsWin7);
 }
 else if (OperatingSystem.IsWindowsVersionAtLeast(8))
 {
-    featureLevelsWin8.AddRange(featureLevelsWin7);
-    featureLevels = featureLevelsWin8.ToArray();
+    featureLevels.AddRange(featureLevelsWin8);
+    featureLevels.AddRange(featureLevelsWin7);
 }
 else
 {
-    featureLevels = featureLevelsWin7.ToArray();
+    featureLevels.AddRange(featureLevelsWin7);
 }
 
-Result result = D3D11CreateDevice(null, DriverType.Hardware, DeviceCreationFlags.VideoSupport, featureLevels, out ID3D11Device? device);
+Result result = D3D11CreateDevice(null, DriverType.Hardware, DeviceCreationFlags.VideoSupport, featureLevels.ToArray(), out ID3D11Device? device);
 if (!result.Success)
 {
     WriteLine("Failed to create D3D11 Device");

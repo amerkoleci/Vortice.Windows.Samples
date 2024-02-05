@@ -20,13 +20,13 @@ namespace Vortice.Framework;
 /// </summary>
 public abstract class D3D11Application : Application
 {
-    private static readonly FeatureLevel[] s_featureLevels = new[]
-    {
+    private static readonly FeatureLevel[] s_featureLevels =
+    [
         FeatureLevel.Level_11_1,
         FeatureLevel.Level_11_0,
         FeatureLevel.Level_10_1,
         FeatureLevel.Level_10_0
-    };
+    ];
 
     private readonly Format _colorFormat;
     private readonly Format _depthStencilFormat;
