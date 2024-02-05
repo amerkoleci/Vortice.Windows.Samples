@@ -24,12 +24,11 @@ internal class DrawTextApp : D3D11Application
     private ID3D11RenderTargetView _textureRTV;
     private ID3D11SamplerState _textureSampler;
 
-    // text related objects
-    private IDWriteFactory _directWriteFactory;
-    private IDWriteTextFormat _textFormat;
-    private ID2D1Factory _direct2dFactory;
-    private ID2D1SolidColorBrush _brush;
-    private ID2D1RenderTarget _renderTarget2d;
+    static IDWriteFactory _directWriteFactory;
+    static IDWriteTextFormat _textFormat;
+    static ID2D1Factory7 _direct2dFactory;
+    static ID2D1SolidColorBrush _brush;
+    static ID2D1RenderTarget _renderTarget2d;
 
     protected override void Initialize()
     {
@@ -59,17 +58,17 @@ internal class DrawTextApp : D3D11Application
             ArraySize = 1,
             CPUAccessFlags = CpuAccessFlags.None,
             BindFlags = BindFlags.ShaderResource | BindFlags.RenderTarget,
-            Format = Format.R8G8B8A8_UNorm,
-            Height = 50,
+            Format = Format.B8G8R8A8_UNorm,
+            Height = 378,
             MipLevels = 1,
             MiscFlags = ResourceOptionFlags.None,
             SampleDescription = new SampleDescription(1,0),
             Usage = ResourceUsage.Default,
-            Width = 200
+            Width = 720
         };
         _texture = Device.CreateTexture2D(desc);
         _textureSRV = Device.CreateShaderResourceView(_texture);
-        _textureSampler = Device.CreateSamplerState(SamplerDescription.PointWrap);
+        _textureSampler = Device.CreateSamplerState(SamplerDescription.LinearWrap);
         _textureRTV = Device.CreateRenderTargetView(_texture);
         DeviceContext.ClearRenderTargetView(_textureRTV, Colors.MediumBlue);
 
@@ -82,7 +81,7 @@ internal class DrawTextApp : D3D11Application
             FontWeight.Bold,
             FontStyle.Normal,
             FontStretch.Normal,
-            16);
+            100);
 
         // set text alignment
         _textFormat.TextAlignment = TextAlignment.Center;
@@ -100,6 +99,7 @@ internal class DrawTextApp : D3D11Application
         if (dispose)
         {
             _vertexBuffer.Dispose();
+            _indexBuffer.Dispose();
             _vertexShader.Dispose();
             _pixelShader.Dispose();
             _inputLayout.Dispose();
@@ -137,7 +137,13 @@ internal class DrawTextApp : D3D11Application
 
     private void DrawText(string text, ID3D11Texture2D target)
     {
+        // the dxgi runtime layer provides the video memory sharing mechanism to allow
+        // Direct2D and Direct3D to work together. One way to use the two technologies
+        // together is by obtaining a IDXGISurface and then use CreateDxgiSurfaceRenderTarget
+        // to create an ID2D1RenderTarget, which can then be drawn to with Direct2D.
+
         using IDXGISurface1 dxgiSurface = target.QueryInterface<IDXGISurface1>();
+        
         RenderTargetProperties rtvProps = new()
         {
             DpiX = 0,
@@ -153,13 +159,15 @@ internal class DrawTextApp : D3D11Application
         _brush?.Release();
         _brush = _renderTarget2d.CreateSolidColorBrush(Colors.Black);
 
-        Rect layoutRect = new (0, 0, 200, 50);
+        Rect layoutRect = new (0, 0, 720, 378);
 
         _renderTarget2d.BeginDraw();
         _renderTarget2d.Transform = Matrix3x2.Identity;
         _renderTarget2d.Clear(Colors.White);
         _renderTarget2d.DrawText(text, _textFormat, layoutRect, _brush);
         _renderTarget2d.EndDraw();
+        
+        _renderTarget2d.Dispose();
     }
 
     public static void Main()
