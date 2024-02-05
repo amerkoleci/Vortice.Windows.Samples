@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <PackageVersion Include="CommunityToolkit.Diagnostics" Version="8.2.2" />
-    <PackageVersion Include="Alimer.Bindings.SDL" Version="3.4.7" />
     <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.49-beta" />
 
     <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.4.231219000" />
