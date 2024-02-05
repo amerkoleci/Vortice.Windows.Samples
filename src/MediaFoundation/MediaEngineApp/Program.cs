@@ -18,7 +18,7 @@ static class Program
                 s_eventReadyToPlay.Set();
                 break;
             case MediaEngineEvent.TimeUpdate:
-                Console.Write(" {0}", TimeSpan.FromSeconds(s_mediaEngineEx.CurrentTime));
+                Console.Write(" {0}", TimeSpan.FromSeconds(s_mediaEngineEx!.CurrentTime));
                 break;
             case MediaEngineEvent.Error:
             case MediaEngineEvent.Abort:

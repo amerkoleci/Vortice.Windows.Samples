@@ -383,7 +383,7 @@ public abstract class D3D11Application : Application
 
     protected unsafe (ID3D11Texture2D, ID3D11ShaderResourceView) LoadTexture(string filePath, int mipLevels = 0)
     {
-        Image image = Image.FromFile(filePath);
+        Image image = Image.FromFile(filePath)!;
 
         ID3D11Texture2D texture;
         if (mipLevels == 0)

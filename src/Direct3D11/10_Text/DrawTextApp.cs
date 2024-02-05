@@ -10,6 +10,8 @@ using Vortice.DXGI;
 using Vortice.Framework;
 using Vortice.Mathematics;
 
+#nullable disable
+
 internal class DrawTextApp : D3D11Application
 {
     private ID3D11Buffer _vertexBuffer;
