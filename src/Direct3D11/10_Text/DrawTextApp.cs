@@ -1,4 +1,4 @@
-﻿// Copyright © Amer Koleci and Contributors.
+﻿// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Numerics;
@@ -10,7 +10,7 @@ using Vortice.DXGI;
 using Vortice.Framework;
 using Vortice.Mathematics;
 
-namespace Text;
+#nullable disable
 
 internal class DrawTextApp : D3D11Application
 {
@@ -24,7 +24,6 @@ internal class DrawTextApp : D3D11Application
     private ID3D11RenderTargetView _textureRTV;
     private ID3D11SamplerState _textureSampler;
 
-    // text related objects
     static IDWriteFactory _directWriteFactory;
     static IDWriteTextFormat _textFormat;
     static ID2D1Factory7 _direct2dFactory;
@@ -34,12 +33,12 @@ internal class DrawTextApp : D3D11Application
     protected override void Initialize()
     {
         ReadOnlySpan<VertexPositionTexture> source =
-          [
-              new VertexPositionTexture(new Vector3(-0.5f, 0.5f, 0.0f), new Vector2(0, 0)),
-              new VertexPositionTexture(new Vector3(0.5f, 0.5f, 0.0f), new Vector2(1, 0)),
-              new VertexPositionTexture(new Vector3(0.5f, -0.5f, 0.0f), new Vector2(1, 1)),
-              new VertexPositionTexture(new Vector3(-0.5f, -0.5f, 0.0f), new Vector2(0, 1))
-          ];
+        [
+            new VertexPositionTexture(new Vector3(-0.5f, 0.5f, 0.0f), new Vector2(0, 0)),
+            new VertexPositionTexture(new Vector3(0.5f, 0.5f, 0.0f), new Vector2(1, 0)),
+            new VertexPositionTexture(new Vector3(0.5f, -0.5f, 0.0f), new Vector2(1, 1)),
+            new VertexPositionTexture(new Vector3(-0.5f, -0.5f, 0.0f), new Vector2(0, 1))
+        ];
 
         _vertexBuffer = Device.CreateBuffer(source, BindFlags.VertexBuffer);
 
@@ -140,12 +139,11 @@ internal class DrawTextApp : D3D11Application
     {
         // the dxgi runtime layer provides the video memory sharing mechanism to allow
         // Direct2D and Direct3D to work together. One way to use the two technologies
-        // together is by obtaining IDXGISurface and then use CreateDxgiSurfaceRenderTarget
+        // together is by obtaining a IDXGISurface and then use CreateDxgiSurfaceRenderTarget
         // to create an ID2D1RenderTarget, which can then be drawn to with Direct2D.
 
-        //IDXGISurface1 dxgiSurface = ID3D11Texture2D.QueryInterface<IDXGISurface1>(target); not supported
-        IDXGISurface1 dxgiSurface = target.QueryInterface<IDXGISurface1>();
-
+        using IDXGISurface1 dxgiSurface = target.QueryInterface<IDXGISurface1>();
+        
         RenderTargetProperties rtvProps = new()
         {
             DpiX = 0,
@@ -168,8 +166,7 @@ internal class DrawTextApp : D3D11Application
         _renderTarget2d.Clear(Colors.White);
         _renderTarget2d.DrawText(text, _textFormat, layoutRect, _brush);
         _renderTarget2d.EndDraw();
-
-        dxgiSurface.Dispose();
+        
         _renderTarget2d.Dispose();
     }
 

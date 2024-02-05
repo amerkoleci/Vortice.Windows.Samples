@@ -1,13 +1,13 @@
-﻿// Copyright © Amer Koleci and Contributors.
+﻿// Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using static Vortice.MediaFoundation.MediaFactory;
 
 static class Program
 {
-    private static IMFMediaEngineEx mediaEngineEx;
-    private static readonly ManualResetEvent eventReadyToPlay = new(false);
-    private static bool isMusicStopped;
+    private static IMFMediaEngineEx? s_mediaEngineEx;
+    private static readonly ManualResetEvent s_eventReadyToPlay = new(false);
+    private static bool s_isMusicStopped;
 
     private static void OnPlaybackCallback(MediaEngineEvent playEvent, nuint param1, int param2)
     {
@@ -15,15 +15,15 @@ static class Program
         switch (playEvent)
         {
             case MediaEngineEvent.CanPlay:
-                eventReadyToPlay.Set();
+                s_eventReadyToPlay.Set();
                 break;
             case MediaEngineEvent.TimeUpdate:
-                Console.Write(" {0}", TimeSpan.FromSeconds(mediaEngineEx.CurrentTime));
+                Console.Write(" {0}", TimeSpan.FromSeconds(s_mediaEngineEx!.CurrentTime));
                 break;
             case MediaEngineEvent.Error:
             case MediaEngineEvent.Abort:
             case MediaEngineEvent.Ended:
-                isMusicStopped = true;
+                s_isMusicStopped = true;
                 break;
         }
 
@@ -49,25 +49,25 @@ static class Program
             MediaEngineCreateFlags.AudioOnly, attributes, OnPlaybackCallback);
 
         // Query for MediaEngineEx interface
-        mediaEngineEx = mediaEngine.QueryInterface<IMFMediaEngineEx>();
+        s_mediaEngineEx = mediaEngine.QueryInterface<IMFMediaEngineEx>();
 
         string fileName = Path.Combine(AppContext.BaseDirectory, "ergon.wav");
         using (MFByteStream mfStream = new(fileName))
         {
             // Set the source stream
-            mediaEngineEx.SetSourceFromByteStream(mfStream, fileName);
+            s_mediaEngineEx.SetSourceFromByteStream(mfStream, fileName);
 
             // Wait for MediaEngine to be ready
-            if (!eventReadyToPlay.WaitOne(1000))
+            if (!s_eventReadyToPlay.WaitOne(1000))
             {
                 Console.WriteLine("Unexpected error: Unable to play this file");
             }
 
             // Play the music
-            mediaEngineEx.Play();
+            s_mediaEngineEx.Play();
 
             // Wait until music is stopped.
-            while (!isMusicStopped)
+            while (!s_isMusicStopped)
             {
                 Thread.Sleep(10);
             }

@@ -5,9 +5,8 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <RootNamespace>Text</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <Nullable>enable</Nullable>
-    
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
   </PropertyGroup>
 
   <ItemGroup>
