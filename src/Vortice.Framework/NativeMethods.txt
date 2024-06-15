@@ -87,6 +87,7 @@ ScreenToClient
 SetWindowPlacement
 ShowWindow
 GetClientRect
+GetWindowRect
 BeginPaint
 EndPaint
 SetWindowPos

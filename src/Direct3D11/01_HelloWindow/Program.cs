@@ -15,7 +15,7 @@ class HelloWindowApp : D3D11Application
 
     public static void Main()
     {
-        using HelloWindowApp app = new();
+        HelloWindowApp app = new();
         app.Run();
     }
 }

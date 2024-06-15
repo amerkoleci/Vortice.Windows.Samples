@@ -25,7 +25,6 @@ public class TexturedCubeFromFileApp : D3D11Application
     private ID3D11VertexShader _vertexShader;
     private ID3D11PixelShader _pixelShader;
     private ID3D11InputLayout _inputLayout;
-    private Stopwatch _clock;
 
     protected override void Initialize()
     {
@@ -46,26 +45,21 @@ public class TexturedCubeFromFileApp : D3D11Application
         _vertexShader = Device.CreateVertexShader(vertexShaderByteCode.Span);
         _pixelShader = Device.CreatePixelShader(pixelShaderByteCode.Span);
         _inputLayout = Device.CreateInputLayout(VertexPositionNormalTexture.InputElements, vertexShaderByteCode.Span);
-
-        _clock = Stopwatch.StartNew();
     }
 
-    protected override void Dispose(bool dispose)
+    protected override void OnShutdown()
     {
-        if (dispose)
-        {
-            _vertexBuffer.Dispose();
-            _indexBuffer.Dispose();
-            _constantBuffer.Dispose();
-            _textureSRV.Dispose();
-            _textureSampler.Dispose();
-            _texture.Dispose();
-            _vertexShader.Dispose();
-            _pixelShader.Dispose();
-            _inputLayout.Dispose();
-        }
+        _vertexBuffer.Dispose();
+        _indexBuffer.Dispose();
+        _constantBuffer.Dispose();
+        _textureSRV.Dispose();
+        _textureSampler.Dispose();
+        _texture.Dispose();
+        _vertexShader.Dispose();
+        _pixelShader.Dispose();
+        _inputLayout.Dispose();
 
-        base.Dispose(dispose);
+        base.OnShutdown();
     }
 
     protected unsafe override void OnRender()
@@ -73,8 +67,8 @@ public class TexturedCubeFromFileApp : D3D11Application
         DeviceContext.ClearRenderTargetView(ColorTextureView, Colors.CornflowerBlue);
         DeviceContext.ClearDepthStencilView(DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
 
-        var time = _clock.ElapsedMilliseconds / 1000.0f;
-        Matrix4x4 world = Matrix4x4.CreateRotationX(time) * Matrix4x4.CreateRotationY(time * 2) * Matrix4x4.CreateRotationZ(time * .7f);
+        float deltaTime = (float)Time.Total.TotalSeconds;
+        Matrix4x4 world = Matrix4x4.CreateRotationX(deltaTime) * Matrix4x4.CreateRotationY(deltaTime * 2) * Matrix4x4.CreateRotationZ(deltaTime * .7f);
 
         Matrix4x4 view = Matrix4x4.CreateLookAt(new Vector3(0, 0, 25), new Vector3(0, 0, 0), Vector3.UnitY);
         Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView((float)Math.PI / 4, AspectRatio, 0.1f, 100);
@@ -100,7 +94,7 @@ public class TexturedCubeFromFileApp : D3D11Application
 
     public static void Main()
     {
-        using TexturedCubeFromFileApp app = new();
+        TexturedCubeFromFileApp app = new();
         app.Run();
     }
 }

@@ -35,17 +35,14 @@ public class TriangleApp : D3D11Application
         _inputLayout = Device.CreateInputLayout(VertexPositionColor.InputElements, vertexShaderByteCode.Span);
     }
 
-    protected override void Dispose(bool dispose)
+    protected override void OnShutdown()
     {
-        if (dispose)
-        {
-            _vertexBuffer.Dispose();
-            _vertexShader.Dispose();
-            _pixelShader.Dispose();
-            _inputLayout.Dispose();
-        }
+        _vertexBuffer.Dispose();
+        _vertexShader.Dispose();
+        _pixelShader.Dispose();
+        _inputLayout.Dispose();
 
-        base.Dispose(dispose);
+        base.OnShutdown();
     }
 
     protected override void OnRender()
@@ -63,7 +60,7 @@ public class TriangleApp : D3D11Application
 
     public static void Main()
     {
-        using TriangleApp app = new();
+        TriangleApp app = new();
         app.Run();
     }
 }

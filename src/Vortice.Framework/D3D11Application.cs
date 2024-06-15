@@ -2,6 +2,7 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Diagnostics;
+using System.Drawing;
 using SharpGen.Runtime;
 using Vortice.D3DCompiler;
 using Vortice.Direct3D;
@@ -30,20 +31,19 @@ public abstract class D3D11Application : Application
 
     private readonly Format _colorFormat;
     private readonly Format _depthStencilFormat;
-    private readonly int _backBufferCount;
     private IDXGIFactory2 _dxgiFactory;
     private readonly bool _isTearingSupported;
     private readonly FeatureLevel _featureLevel;
 
     protected D3D11Application(
+        AppPlatform? platform = default,
         DeviceCreationFlags creationFlags = DeviceCreationFlags.BgraSupport,
         Format colorFormat = Format.B8G8R8A8_UNorm,
-        Format depthStencilFormat = Format.D32_Float,
-        int backBufferCount = 2)
+        Format depthStencilFormat = Format.D32_Float)
+        : base(platform)
     {
         _colorFormat = colorFormat;
         _depthStencilFormat = depthStencilFormat;
-        _backBufferCount = backBufferCount;
 
         _dxgiFactory = CreateDXGIFactory1<IDXGIFactory2>();
 
@@ -86,52 +86,16 @@ public abstract class D3D11Application : Application
         tempContext.Dispose();
         tempDevice.Dispose();
 
-        IntPtr hwnd = MainWindow.Handle;
-
-        int backBufferWidth = Math.Max(MainWindow.ClientSize.Width, 1);
-        int backBufferHeight = Math.Max(MainWindow.ClientSize.Height, 1);
-        Format backBufferFormat = ToSwapChainFormat(colorFormat);
-
-        SwapChainDescription1 swapChainDescription = new()
-        {
-            Width = backBufferWidth,
-            Height = backBufferHeight,
-            Format = backBufferFormat,
-            BufferCount = _backBufferCount,
-            BufferUsage = Usage.RenderTargetOutput,
-            SampleDescription = SampleDescription.Default,
-            Scaling = Scaling.Stretch,
-            SwapEffect = SwapEffect.FlipDiscard,
-            AlphaMode = AlphaMode.Ignore,
-            Flags = _isTearingSupported ? SwapChainFlags.AllowTearing : SwapChainFlags.None
-        };
-
-        SwapChainFullscreenDescription fullscreenDescription = new SwapChainFullscreenDescription
-        {
-            Windowed = true
-        };
-
-        SwapChain = _dxgiFactory.CreateSwapChainForHwnd(Device, hwnd, swapChainDescription, fullscreenDescription);
-        _dxgiFactory.MakeWindowAssociation(hwnd, WindowAssociationFlags.IgnoreAltEnter);
-
-        ColorTexture = SwapChain.GetBuffer<ID3D11Texture2D>(0);
-        RenderTargetViewDescription renderTargetViewDesc = new(RenderTargetViewDimension.Texture2D, colorFormat);
-        ColorTextureView = Device.CreateRenderTargetView(ColorTexture, renderTargetViewDesc);
-
-        // Create depth stencil texture if required
-        if (depthStencilFormat != Format.Unknown)
-        {
-            DepthStencilTexture = Device.CreateTexture2D(depthStencilFormat, backBufferWidth, backBufferHeight, 1, 1, null, BindFlags.DepthStencil);
-            DepthStencilView = Device.CreateDepthStencilView(DepthStencilTexture!, new DepthStencilViewDescription(DepthStencilTexture, DepthStencilViewDimension.Texture2D));
-        }
+        CreateWindowSizeDependentResources();
     }
 
     public ID3D11Device1 Device { get; }
     public ID3D11DeviceContext1 DeviceContext { get; }
     public FeatureLevel FeatureLevel => _featureLevel;
-    public IDXGISwapChain1 SwapChain { get; }
+    public IDXGISwapChain1 SwapChain { get; private set; }
 
     public Format ColorFormat => _colorFormat;
+    public ColorSpaceType ColorSpace { get; private set; } = ColorSpaceType.RgbFullG22NoneP709;
     public ID3D11Texture2D ColorTexture { get; private set; }
     public ID3D11RenderTargetView ColorTextureView { get; private set; }
 
@@ -146,30 +110,25 @@ public abstract class D3D11Application : Application
 
     public bool DiscardViews { get; set; } = true;
 
-    protected override void Dispose(bool dispose)
+    protected override void OnShutdown()
     {
-        if (dispose)
-        {
-            ColorTexture.Dispose();
-            ColorTextureView.Dispose();
-            DepthStencilTexture?.Dispose();
-            DepthStencilView?.Dispose();
+        ColorTexture.Dispose();
+        ColorTextureView.Dispose();
+        DepthStencilTexture?.Dispose();
+        DepthStencilView?.Dispose();
 
-            SwapChain.Dispose();
-            DeviceContext.Dispose();
-            Device.Dispose();
-            _dxgiFactory.Dispose();
+        SwapChain.Dispose();
+        DeviceContext.Dispose();
+        Device.Dispose();
+        _dxgiFactory.Dispose();
 
 #if DEBUG
-            if (DXGIGetDebugInterface1(out IDXGIDebug1? dxgiDebug).Success)
-            {
-                dxgiDebug!.ReportLiveObjects(DebugAll, ReportLiveObjectFlags.Summary | ReportLiveObjectFlags.IgnoreInternal);
-                dxgiDebug!.Dispose();
-            }
-#endif
+        if (DXGIGetDebugInterface1(out IDXGIDebug1? dxgiDebug).Success)
+        {
+            dxgiDebug!.ReportLiveObjects(DebugAll, ReportLiveObjectFlags.Summary | ReportLiveObjectFlags.IgnoreInternal);
+            dxgiDebug!.Dispose();
         }
-
-        base.Dispose(dispose);
+#endif
     }
 
     private IDXGIAdapter1 GetHardwareAdapter()
@@ -222,6 +181,67 @@ public abstract class D3D11Application : Application
         throw new InvalidOperationException("Cannot detect D3D11 adapter");
     }
 
+    private void CreateWindowSizeDependentResources()
+    {
+        // Clear the previous window size specific context.
+        DeviceContext.UnsetRenderTargets();
+        ColorTextureView?.Dispose();
+        DepthStencilView?.Dispose();
+        ColorTexture?.Dispose();
+        DepthStencilTexture?.Dispose();
+        DeviceContext.Flush();
+
+        if (SwapChain is null)
+        {
+            SwapChain = MainWindow.CreateSwapChain(_dxgiFactory, Device, ColorFormat);
+        }
+        else
+        {
+            SizeF size = MainWindow.ClientSize;
+            Format backBufferFormat = SwapChain.Description1.Format;
+
+            // If the swap chain already exists, resize it.
+            Result hr = SwapChain.ResizeBuffers(
+                MainWindow.BackBufferCount,
+                (int)size.Width,
+                (int)size.Height,
+                backBufferFormat,
+                _isTearingSupported ? SwapChainFlags.AllowTearing : SwapChainFlags.None
+                );
+
+            if (hr == DXGI.ResultCode.DeviceRemoved || hr == DXGI.ResultCode.DeviceReset)
+            {
+#if DEBUG
+                Result logResult = (hr == DXGI.ResultCode.DeviceRemoved) ? Device.DeviceRemovedReason : hr;
+                Debug.WriteLine($"Device Lost on ResizeBuffers: Reason code {logResult}");
+#endif
+                // If the device was removed for any reason, a new device and swap chain will need to be created.
+                HandleDeviceLost();
+
+                // Everything is set up now. Do not continue execution of this method. HandleDeviceLost will reenter this method
+                // and correctly set up the new device.
+                return;
+            }
+            else
+            {
+                hr.CheckError();
+            }
+        }
+
+        UpdateColorSpace();
+
+        ColorTexture = SwapChain.GetBuffer<ID3D11Texture2D>(0);
+        RenderTargetViewDescription renderTargetViewDesc = new(RenderTargetViewDimension.Texture2D, _colorFormat);
+        ColorTextureView = Device.CreateRenderTargetView(ColorTexture, renderTargetViewDesc);
+
+        // Create depth stencil texture if required
+        if (_depthStencilFormat != Format.Unknown)
+        {
+            DepthStencilTexture = Device.CreateTexture2D(_depthStencilFormat, SwapChain.Description1.Width, SwapChain.Description1.Height, 1, 1, null, BindFlags.DepthStencil);
+            DepthStencilView = Device.CreateDepthStencilView(DepthStencilTexture!, new DepthStencilViewDescription(DepthStencilTexture, DepthStencilViewDimension.Texture2D));
+        }
+    }
+
     private void HandleDeviceLost()
     {
 
@@ -235,68 +255,111 @@ public abstract class D3D11Application : Application
             _dxgiFactory.Dispose();
             _dxgiFactory = CreateDXGIFactory1<IDXGIFactory2>();
         }
+
+        ColorSpace = ColorSpaceType.RgbFullG22NoneP709;
+        if (SwapChain is null)
+            return;
+
+        bool isDisplayHDR10 = false;
+
+        // To detect HDR support, we will need to check the color space in the primary
+        // DXGI output associated with the app at this point in time
+        // (using window/display intersection).
+
+        // Get the retangle bounds of the app window.
+        Rectangle windowBounds = MainWindow.Bounds;
+        if (windowBounds.IsEmpty)
+            return;
+
+        IDXGIOutput? bestOutput = default;
+        int bestIntersectArea = -1;
+
+        for (int adapterIndex = 0;
+            _dxgiFactory.EnumAdapters1(adapterIndex, out IDXGIAdapter1? adapter).Success;
+            adapterIndex++)
+        {
+            for (int outputIndex = 0;
+                adapter.EnumOutputs(outputIndex, out IDXGIOutput? output).Success;
+                outputIndex++)
+            {
+                // Get the rectangle bounds of current output.
+                OutputDescription outputDesc = output.Description;
+                RawRect r = outputDesc.DesktopCoordinates;
+
+                // Compute the intersection
+                int intersectArea = ComputeIntersectionArea(in windowBounds, in r);
+                if (intersectArea > bestIntersectArea)
+                {
+                    bestOutput = output;
+                    bestIntersectArea = intersectArea;
+                }
+                else
+                {
+                    output?.Dispose();
+                }
+            }
+        }
+
+        if (bestOutput is not null)
+        {
+            using IDXGIOutput6? output6 = bestOutput.QueryInterfaceOrNull<IDXGIOutput6>();
+            if (output6 != null)
+            {
+                OutputDescription1 outputDesc = output6.Description1;
+
+                if (outputDesc.ColorSpace == ColorSpaceType.RgbFullG2084NoneP2020)
+                {
+                    // Display output is HDR10.
+                    isDisplayHDR10 = true;
+                }
+            }
+        }
+
+        if (isDisplayHDR10)
+        {
+            switch (ColorFormat)
+            {
+                case Format.R10G10B10A2_UNorm:
+                    // The application creates the HDR10 signal.
+                    ColorSpace = ColorSpaceType.RgbFullG2084NoneP2020;
+                    break;
+
+                case Format.R16G16B16A16_Float:
+                    // The system creates the HDR10 signal; application uses linear values.
+                    ColorSpace = ColorSpaceType.RgbFullG10NoneP709;
+                    break;
+
+                default:
+                    ColorSpace = ColorSpaceType.RgbFullG22NoneP709;
+                    break;
+            }
+        }
+
+        using IDXGISwapChain3? swapChain3 = SwapChain!.QueryInterfaceOrNull<IDXGISwapChain3>();
+        if (swapChain3 is not null)
+        {
+            SwapChainColorSpaceSupportFlags colorSpaceSupport = swapChain3.CheckColorSpaceSupport(ColorSpace);
+            if ((colorSpaceSupport & SwapChainColorSpaceSupportFlags.Present) != SwapChainColorSpaceSupportFlags.None)
+            {
+                swapChain3.SetColorSpace1(ColorSpace);
+            }
+        }
     }
 
     private void ResizeSwapchain()
     {
-        // Clear the previous window size specific context.
-        DeviceContext.UnsetRenderTargets();
-        ColorTextureView.Dispose();
-        DepthStencilView?.Dispose();
-        ColorTexture.Dispose();
-        DepthStencilTexture?.Dispose();
-        DeviceContext.Flush();
-
-        int backBufferWidth = Math.Max(MainWindow.ClientSize.Width, 1);
-        int backBufferHeight = Math.Max(MainWindow.ClientSize.Height, 1);
-        Format backBufferFormat = ToSwapChainFormat(_colorFormat);
-
-        // If the swap chain already exists, resize it.
-        Result hr = SwapChain.ResizeBuffers(
-            _backBufferCount,
-            backBufferWidth,
-            backBufferHeight,
-            backBufferFormat,
-            _isTearingSupported ? SwapChainFlags.AllowTearing : SwapChainFlags.None
-            );
-
-        if (hr == DXGI.ResultCode.DeviceRemoved || hr == DXGI.ResultCode.DeviceReset)
-        {
-#if DEBUG
-            Result logResult = (hr == DXGI.ResultCode.DeviceRemoved) ? Device.DeviceRemovedReason : hr;
-            Debug.WriteLine($"Device Lost on ResizeBuffers: Reason code {logResult}");
-#endif
-            // If the device was removed for any reason, a new device and swap chain will need to be created.
-            HandleDeviceLost();
-
-            // Everything is set up now. Do not continue execution of this method. HandleDeviceLost will reenter this method
-            // and correctly set up the new device.
-            return;
-        }
-        else
-        {
-            hr.CheckError();
-        }
-
-        ColorTexture = SwapChain.GetBuffer<ID3D11Texture2D>(0);
-        RenderTargetViewDescription renderTargetViewDesc = new(RenderTargetViewDimension.Texture2D, _colorFormat);
-        ColorTextureView = Device.CreateRenderTargetView(ColorTexture, renderTargetViewDesc);
-
-        // Create depth stencil texture if required
-        if (_depthStencilFormat != Format.Unknown)
-        {
-            DepthStencilTexture = Device.CreateTexture2D(_depthStencilFormat, backBufferWidth, backBufferHeight, 1, 1, null, BindFlags.DepthStencil);
-            DepthStencilView = Device.CreateDepthStencilView(DepthStencilTexture!, new DepthStencilViewDescription(DepthStencilTexture, DepthStencilViewDimension.Texture2D));
-        }
+        CreateWindowSizeDependentResources();
     }
 
-    protected internal override void Render()
+    protected override void Draw(AppTime time)
     {
         DeviceContext.OMSetRenderTargets(ColorTextureView, DepthStencilView);
         DeviceContext.RSSetViewport(Viewport);
-        DeviceContext.RSSetScissorRect(0, 0, MainWindow.ClientSize.Width, MainWindow.ClientSize.Height);
+        DeviceContext.RSSetScissorRect(0, 0, (int)MainWindow.ClientSize.Width, (int)MainWindow.ClientSize.Height);
 
         OnRender();
+
+        base.Draw(time);
     }
 
     protected abstract void OnRender();
@@ -366,7 +429,7 @@ public abstract class D3D11Application : Application
 
     protected static ReadOnlyMemory<byte> CompileBytecode(string shaderName, string entryPoint, string profile)
     {
-        string assetsPath = Path.Combine(AppContext.BaseDirectory, "Shaders");
+        string assetsPath = Path.Combine(System.AppContext.BaseDirectory, "Shaders");
         string fileName = Path.Combine(assetsPath, shaderName);
         //string shaderSource = File.ReadAllText(Path.Combine(assetsPath, shaderName));
 
@@ -412,5 +475,10 @@ public abstract class D3D11Application : Application
         }
 
         return (texture, srv);
+    }
+
+    private static int ComputeIntersectionArea(in Rectangle rect1, in RawRect rect2)
+    {
+        return Math.Max(0, Math.Min(rect1.Right, rect2.Right) - Math.Max(rect1.Left, rect2.Left)) * Math.Max(0, Math.Min(rect1.Bottom, rect2.Bottom) - Math.Max(rect1.Top, rect2.Top));
     }
 }

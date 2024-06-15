@@ -71,16 +71,11 @@ static class Program
             _pipelineState = Device.CreateGraphicsPipelineState<ID3D12PipelineState>(psoDesc);
         }
 
-        protected override void Dispose(bool dispose)
+        protected override void OnShutdown()
         {
-            if (dispose)
-            {
-                _vertexBuffer.Dispose();
-                _rootSignature.Dispose();
-                _pipelineState.Dispose();
-            }
-
-            base.Dispose(dispose);
+            _vertexBuffer.Dispose();
+            _rootSignature.Dispose();
+            _pipelineState.Dispose();
         }
 
         protected override void OnRender()
@@ -110,7 +105,7 @@ static class Program
 
     static void Main()
     {
-        using HelloTriangle app = new();
+        HelloTriangle app = new();
         app.Run();
     }
 }

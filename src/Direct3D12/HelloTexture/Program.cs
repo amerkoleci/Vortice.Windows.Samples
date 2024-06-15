@@ -125,17 +125,12 @@ static class Program
             WaitForGpu();
         }
 
-        protected override void Dispose(bool dispose)
+        protected override void OnShutdown()
         {
-            if (dispose)
-            {
-                _vertexBuffer.Dispose();
-                _texture.Dispose();
-                _rootSignature.Dispose();
-                _pipelineState.Dispose();
-            }
-
-            base.Dispose(dispose);
+            _vertexBuffer.Dispose();
+            _texture.Dispose();
+            _rootSignature.Dispose();
+            _pipelineState.Dispose();
         }
 
         protected override void OnRender()
@@ -162,7 +157,7 @@ static class Program
 
     static void Main()
     {
-        using HelloTexture app = new();
+        HelloTexture app = new();
         app.Run();
     }
 }

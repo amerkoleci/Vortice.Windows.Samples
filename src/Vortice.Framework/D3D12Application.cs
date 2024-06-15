@@ -14,6 +14,7 @@ using SharpGen.Runtime;
 using Vortice.Mathematics;
 using Vortice.Dxc;
 using System.Runtime.InteropServices;
+using System.Drawing;
 
 namespace Vortice.Framework;
 
@@ -24,7 +25,6 @@ public abstract class D3D12Application : Application
 {
     private readonly Format _colorFormat;
     private readonly Format _depthStencilFormat;
-    private readonly int _backBufferCount;
     private readonly FeatureLevel _minFeatureLevel;
     private readonly bool _dxgiDebug;
     private IDXGIFactory4 _dxgiFactory;
@@ -43,14 +43,14 @@ public abstract class D3D12Application : Application
 
     private readonly ID3D12CommandAllocator[] _commandAllocators;
 
-    protected D3D12Application(Format colorFormat = Format.B8G8R8A8_UNorm,
+    protected D3D12Application(AppPlatform? platform = default,
+        Format colorFormat = Format.B8G8R8A8_UNorm,
         Format depthStencilFormat = Format.D32_Float,
-        int backBufferCount = 2,
         FeatureLevel minFeatureLevel = FeatureLevel.Level_11_0)
+        : base(platform)
     {
         _colorFormat = colorFormat;
         _depthStencilFormat = depthStencilFormat;
-        _backBufferCount = backBufferCount;
         _minFeatureLevel = minFeatureLevel;
 
 #if DEBUG
@@ -186,40 +186,19 @@ public abstract class D3D12Application : Application
         DirectQueue.Name = "Direct Queue";
 
         // Create synchronization objects.
-        _fenceValues = new ulong[_backBufferCount];
+        _fenceValues = new ulong[MainWindow.BackBufferCount];
         _frameFence = Device.CreateFence(_fenceValues[0]);
         _frameFence.Name = "Frame Fence";
         _frameFenceEvent = new AutoResetEvent(false);
 
         // Create SwapChain
-        IntPtr hwnd = MainWindow.Handle;
-        int backBufferWidth = Math.Max(MainWindow.ClientSize.Width, 1);
-        int backBufferHeight = Math.Max(MainWindow.ClientSize.Height, 1);
-        Format backBufferFormat = ToSwapChainFormat(colorFormat);
-
-        SwapChainDescription1 swapChainDesc = new()
+        using (IDXGISwapChain1 tempSwapChain = MainWindow.CreateSwapChain(_dxgiFactory, DirectQueue, colorFormat))
         {
-            Width = backBufferWidth,
-            Height = backBufferHeight,
-            Format = backBufferFormat,
-            BufferCount = _backBufferCount,
-            BufferUsage = Usage.RenderTargetOutput,
-            SampleDescription = SampleDescription.Default,
-            Scaling = Scaling.Stretch,
-            SwapEffect = SwapEffect.FlipDiscard,
-            AlphaMode = AlphaMode.Ignore,
-            Flags = _isTearingSupported ? SwapChainFlags.AllowTearing : SwapChainFlags.None
-        };
-
-        using (IDXGISwapChain1 tempSwapChain = _dxgiFactory.CreateSwapChainForHwnd(DirectQueue, hwnd, swapChainDesc))
-        {
-            _dxgiFactory.MakeWindowAssociation(hwnd, WindowAssociationFlags.IgnoreAltEnter);
-
             SwapChain = tempSwapChain.QueryInterface<IDXGISwapChain3>();
         }
 
         // Create RTV heap to handle SwapChain RTVs
-        _rtvDescriptorHeap = Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, _backBufferCount));
+        _rtvDescriptorHeap = Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, MainWindow.BackBufferCount));
         _rtvDescriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
 
         // Create frame resources.
@@ -227,8 +206,8 @@ public abstract class D3D12Application : Application
             CpuDescriptorHandle rtvHandle = _rtvDescriptorHeap.GetCPUDescriptorHandleForHeapStart();
 
             // Create a RTV for each frame.
-            _renderTargets = new ID3D12Resource[swapChainDesc.BufferCount];
-            for (int i = 0; i < swapChainDesc.BufferCount; i++)
+            _renderTargets = new ID3D12Resource[MainWindow.BackBufferCount];
+            for (int i = 0; i < _renderTargets.Length; i++)
             {
                 _renderTargets[i] = SwapChain.GetBuffer<ID3D12Resource>(i);
                 Device.CreateRenderTargetView(_renderTargets[i], null, rtvHandle);
@@ -238,7 +217,7 @@ public abstract class D3D12Application : Application
 
         if (_depthStencilFormat != Format.Unknown)
         {
-            ResourceDescription depthStencilDesc = ResourceDescription.Texture2D(_depthStencilFormat, (uint)swapChainDesc.Width, (uint)swapChainDesc.Height, 1, 1);
+            ResourceDescription depthStencilDesc = ResourceDescription.Texture2D(_depthStencilFormat, (uint)MainWindow.ClientSize.Width, (uint)MainWindow.ClientSize.Height, 1, 1);
             depthStencilDesc.Flags |= ResourceFlags.AllowDepthStencil;
 
             DepthStencilTexture = Device.CreateCommittedResource(
@@ -260,8 +239,8 @@ public abstract class D3D12Application : Application
             Device.CreateDepthStencilView(DepthStencilTexture, dsViewDesc, _dsvDescriptorHeap.GetCPUDescriptorHandleForHeapStart());
         }
 
-        _commandAllocators = new ID3D12CommandAllocator[swapChainDesc.BufferCount];
-        for (int i = 0; i < swapChainDesc.BufferCount; i++)
+        _commandAllocators = new ID3D12CommandAllocator[MainWindow.BackBufferCount];
+        for (int i = 0; i < _commandAllocators.Length; i++)
         {
             _commandAllocators[i] = Device.CreateCommandAllocator(CommandListType.Direct);
         }
@@ -303,40 +282,35 @@ public abstract class D3D12Application : Application
 
     public bool UseRenderPass { get; set; }
 
-    protected override void Dispose(bool dispose)
+    protected override void OnShutdown()
     {
-        if (dispose)
+        WaitForGpu();
+
+        DepthStencilTexture?.Dispose();
+        _dsvDescriptorHeap?.Dispose();
+
+        for (int i = 0; i < _commandAllocators.Length; i++)
         {
-            WaitForGpu();
+            _commandAllocators[i].Dispose();
+            _renderTargets[i].Dispose();
+        }
+        CommandList.Dispose();
 
-            DepthStencilTexture?.Dispose();
-            _dsvDescriptorHeap?.Dispose();
+        _frameFence.Dispose();
+        _rtvDescriptorHeap.Dispose();
 
-            for (int i = 0; i < _commandAllocators.Length; i++)
-            {
-                _commandAllocators[i].Dispose();
-                _renderTargets[i].Dispose();
-            }
-            CommandList.Dispose();
-
-            _frameFence.Dispose();
-            _rtvDescriptorHeap.Dispose();
-
-            SwapChain.Dispose();
-            DirectQueue.Dispose();
-            Device.Dispose();
-            _dxgiFactory.Dispose();
+        SwapChain.Dispose();
+        DirectQueue.Dispose();
+        Device.Dispose();
+        _dxgiFactory.Dispose();
 
 #if DEBUG
-            if (DXGIGetDebugInterface1(out IDXGIDebug1? dxgiDebug).Success)
-            {
-                dxgiDebug!.ReportLiveObjects(DebugAll, ReportLiveObjectFlags.Summary | ReportLiveObjectFlags.IgnoreInternal);
-                dxgiDebug!.Dispose();
-            }
-#endif
+        if (DXGIGetDebugInterface1(out IDXGIDebug1? dxgiDebug).Success)
+        {
+            dxgiDebug!.ReportLiveObjects(DebugAll, ReportLiveObjectFlags.Summary | ReportLiveObjectFlags.IgnoreInternal);
+            dxgiDebug!.Dispose();
         }
-
-        base.Dispose(dispose);
+#endif
     }
 
     protected void WaitForGpu()
@@ -362,9 +336,52 @@ public abstract class D3D12Application : Application
 
     private void ResizeSwapchain()
     {
+        // Wait until all previous GPU work is complete.
+        WaitForGpu();
+
+        // Release resources that are tied to the swap chain and update fence values.
+        for (int i = 0; i < MainWindow.BackBufferCount; i++)
+        {
+            _renderTargets[i].Dispose();
+            _fenceValues[i] = _fenceValues[_backBufferIndex];
+        }
+
+        SizeF size = MainWindow.ClientSize;
+        Format backBufferFormat = SwapChain.Description1.Format;
+
+        // If the swap chain already exists, resize it.
+        const int backBufferCount = 2;
+        Result hr = SwapChain.ResizeBuffers(
+            backBufferCount,
+            (int)size.Width,
+            (int)size.Height,
+            backBufferFormat,
+            _isTearingSupported ? SwapChainFlags.AllowTearing : SwapChainFlags.None
+            );
+
+        if (hr == DXGI.ResultCode.DeviceRemoved || hr == DXGI.ResultCode.DeviceReset)
+        {
+#if DEBUG
+            Result logResult = (hr == DXGI.ResultCode.DeviceRemoved) ? Device.DeviceRemovedReason : hr;
+            Debug.WriteLine($"Device Lost on ResizeBuffers: Reason code {logResult}");
+#endif
+            // If the device was removed for any reason, a new device and swap chain will need to be created.
+            HandleDeviceLost();
+
+            // Everything is set up now. Do not continue execution of this method. HandleDeviceLost will reenter this method
+            // and correctly set up the new device.
+            return;
+        }
+        else
+        {
+            hr.CheckError();
+        }
+
+        // Handle color space settings for HDR
+        UpdateColorSpace();
     }
 
-    protected internal override void Render()
+    protected override void Draw(AppTime time)
     {
         CommandAllocator.Reset();
         CommandList.Reset(CommandAllocator);
@@ -379,7 +396,7 @@ public abstract class D3D12Application : Application
         }
 
         CommandList.RSSetViewport(Viewport);
-        CommandList.RSSetScissorRect(MainWindow.ClientSize.Width, MainWindow.ClientSize.Height);
+        CommandList.RSSetScissorRect((int)MainWindow.ClientSize.Width, (int)MainWindow.ClientSize.Height);
 
         OnRender();
 
@@ -387,6 +404,8 @@ public abstract class D3D12Application : Application
         {
             CommandList.EndRenderPass();
         }
+
+        base.Draw(time);
 
         // Indicate that the back buffer will now be used to present.
         CommandList.ResourceBarrierTransition(_renderTargets[_backBufferIndex], ResourceStates.RenderTarget, ResourceStates.Present);
@@ -488,7 +507,7 @@ public abstract class D3D12Application : Application
         string entryPoint,
         DxcShaderModel? shaderModel = default)
     {
-        string assetsPath = Path.Combine(AppContext.BaseDirectory, "Shaders");
+        string assetsPath = Path.Combine(System.AppContext.BaseDirectory, "Shaders");
         string fileName = Path.Combine(assetsPath, shaderName);
         string shaderSource = File.ReadAllText(fileName);
 

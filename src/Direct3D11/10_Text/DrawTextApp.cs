@@ -62,7 +62,7 @@ internal class DrawTextApp : D3D11Application
             Height = 378,
             MipLevels = 1,
             MiscFlags = ResourceOptionFlags.None,
-            SampleDescription = new SampleDescription(1,0),
+            SampleDescription = new SampleDescription(1, 0),
             Usage = ResourceUsage.Default,
             Width = 720
         };
@@ -94,26 +94,23 @@ internal class DrawTextApp : D3D11Application
         DrawText("Hello Text!", _texture);
     }
 
-    protected override void Dispose(bool dispose)
+    protected override void OnShutdown()
     {
-        if (dispose)
-        {
-            _vertexBuffer.Dispose();
-            _indexBuffer.Dispose();
-            _vertexShader.Dispose();
-            _pixelShader.Dispose();
-            _inputLayout.Dispose();
-            _textureSRV.Dispose();
-            _textureRTV.Dispose();
-            _texture.Dispose();
-            _textureSampler.Dispose();
-            _textFormat.Dispose();
-            _brush?.Dispose();
-            _direct2dFactory.Dispose();
-            _directWriteFactory.Dispose();
-        }
+        _vertexBuffer.Dispose();
+        _indexBuffer.Dispose();
+        _vertexShader.Dispose();
+        _pixelShader.Dispose();
+        _inputLayout.Dispose();
+        _textureSRV.Dispose();
+        _textureRTV.Dispose();
+        _texture.Dispose();
+        _textureSampler.Dispose();
+        _textFormat.Dispose();
+        _brush?.Dispose();
+        _direct2dFactory.Dispose();
+        _directWriteFactory.Dispose();
 
-        base.Dispose(dispose);
+        base.OnShutdown();
     }
 
     protected override void OnRender()
@@ -135,7 +132,7 @@ internal class DrawTextApp : D3D11Application
         DeviceContext.DrawIndexed(6, 0, 0);
     }
 
-    private void DrawText(string text, ID3D11Texture2D target)
+    private static void DrawText(string text, ID3D11Texture2D target)
     {
         // the dxgi runtime layer provides the video memory sharing mechanism to allow
         // Direct2D and Direct3D to work together. One way to use the two technologies
@@ -143,7 +140,7 @@ internal class DrawTextApp : D3D11Application
         // to create an ID2D1RenderTarget, which can then be drawn to with Direct2D.
 
         using IDXGISurface1 dxgiSurface = target.QueryInterface<IDXGISurface1>();
-        
+
         RenderTargetProperties rtvProps = new()
         {
             DpiX = 0,
@@ -159,20 +156,20 @@ internal class DrawTextApp : D3D11Application
         _brush?.Release();
         _brush = _renderTarget2d.CreateSolidColorBrush(Colors.Black);
 
-        Rect layoutRect = new (0, 0, 720, 378);
+        Rect layoutRect = new(0, 0, 720, 378);
 
         _renderTarget2d.BeginDraw();
         _renderTarget2d.Transform = Matrix3x2.Identity;
         _renderTarget2d.Clear(Colors.White);
         _renderTarget2d.DrawText(text, _textFormat, layoutRect, _brush);
         _renderTarget2d.EndDraw();
-        
+
         _renderTarget2d.Dispose();
     }
 
     public static void Main()
     {
-        using DrawTextApp app = new();
+        DrawTextApp app = new();
         app.Run();
     }
 }

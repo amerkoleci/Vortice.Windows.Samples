@@ -20,18 +20,18 @@ using static Windows.Win32.UI.WindowsAndMessaging.WINDOW_EX_STYLE;
 using static Windows.Win32.UI.WindowsAndMessaging.SET_WINDOW_POS_FLAGS;
 using Vortice.Mathematics;
 using System.Drawing;
+using System.Reflection;
 
 namespace Vortice.Framework;
 
-internal unsafe class Win32AppPlatform : AppPlatform
+internal sealed unsafe class Win32AppPlatform : AppPlatform
 {
-    public const string WindowClassName = "VorticeWindow";
-    public readonly win32.FreeLibrarySafeHandle HInstance;
-    private static readonly Dictionary<IntPtr, Win32Window> _windows = new();
-    private readonly Win32Window _mainWindow;
+    internal const string WindowClassName = "VorticeWindow";
+    internal readonly win32.FreeLibrarySafeHandle HInstance;
+    private static readonly Dictionary<nint, Win32AppWindow> _windows = [];
+    private readonly Win32AppWindow _mainWindow;
 
-    public Win32AppPlatform(Application application)
-        : base(application)
+    public Win32AppPlatform()
     {
         CoInitializeEx(null, COINIT_APARTMENTTHREADED);
 
@@ -65,22 +65,17 @@ internal unsafe class Win32AppPlatform : AppPlatform
             }
         }
 
-        _mainWindow = new Win32Window(this, GetDefaultTitleName());
+        _mainWindow = new Win32AppWindow(this, GetDefaultTitleName(), new(1280, 720));
         _windows.Add(_mainWindow.Handle, _mainWindow);
     }
 
-    // <inheritdoc />
     public override bool IsBlockingRun => true;
-
-    // <inheritdoc />
-    public override Window MainWindow => _mainWindow;
+    public override AppWindow MainWindow => _mainWindow;
 
     // <inheritdoc />
     public override void Run()
     {
-        OnReady();
-
-        _mainWindow.Show();
+        _mainWindow!.Show();
 
         // Main message loop
         MSG msg = default;
@@ -93,14 +88,14 @@ internal unsafe class Win32AppPlatform : AppPlatform
             }
             else
             {
-                Application.Tick();
+                OnTick();
             }
         }
 
         CoUninitialize();
+        OnExiting();
     }
 
-    // <inheritdoc />
     public override void RequestExit()
     {
         PostQuitMessage(0);
@@ -111,9 +106,9 @@ internal unsafe class Win32AppPlatform : AppPlatform
     private static void OnKey(uint message, nuint wParam, nint lParam)
     {
         if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN)
-            D3D12Application.Current?.OnPlatformKeyboardEvent(ConvertKeyCode(lParam, wParam), true);
+            Application.Current?.OnPlatformKeyboardEvent(ConvertKeyCode(lParam, wParam), true);
         else if (message == WM_KEYUP || message == WM_SYSKEYUP)
-            D3D12Application.Current?.OnPlatformKeyboardEvent(ConvertKeyCode(lParam, wParam), false);
+            Application.Current?.OnPlatformKeyboardEvent(ConvertKeyCode(lParam, wParam), false);
     }
 
     private static KeyboardKey ConvertKeyCode(nint lParam, nuint wParam)
@@ -318,10 +313,10 @@ internal unsafe class Win32AppPlatform : AppPlatform
         }
     }
 
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static LRESULT ProcessWindowMessage(HWND hWnd, uint message, WPARAM wParam, LPARAM lParam)
     {
-        if (_windows.TryGetValue(hWnd, out Win32Window? window))
+        if (_windows.TryGetValue(hWnd, out Win32AppWindow? window))
         {
         }
 
@@ -332,9 +327,9 @@ internal unsafe class Win32AppPlatform : AppPlatform
                 break;
 
             case WM_PAINT:
-                if (window!.InSizeMove && D3D12Application.Current != null)
+                if (window!.InSizeMove && Application.Current != null)
                 {
-                    D3D12Application.Current.Tick();
+                    Application.Current.Tick();
                 }
                 else
                 {
@@ -345,9 +340,9 @@ internal unsafe class Win32AppPlatform : AppPlatform
                 break;
 
             case WM_DISPLAYCHANGE:
-                if (D3D12Application.Current != null)
+                if (Application.Current != null)
                 {
-                    D3D12Application.Current.OnDisplayChange();
+                    Application.Current.OnDisplayChange();
                 }
                 break;
 
@@ -421,8 +416,8 @@ internal unsafe class Win32AppPlatform : AppPlatform
                     // Implements the classic ALT+ENTER fullscreen toggle
                     if (s_fullscreen)
                     {
-                        SetWindowLongPtr(hWnd, GWL_STYLE, (uint)WS_OVERLAPPEDWINDOW);
-                        SetWindowLongPtr(hWnd, GWL_EXSTYLE, IntPtr.Zero);
+                        Win32Native.SetWindowLongPtr(hWnd, GWL_STYLE, (uint)WS_OVERLAPPEDWINDOW);
+                        Win32Native.SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
 
                         SizeI windowSize = new(800, 600);
                         if (Application.Current != null)
@@ -435,8 +430,8 @@ internal unsafe class Win32AppPlatform : AppPlatform
                     }
                     else
                     {
-                        SetWindowLongPtr(hWnd, GWL_STYLE, (uint)WS_POPUP);
-                        SetWindowLongPtr(hWnd, GWL_EXSTYLE, (uint)WS_EX_TOPMOST);
+                        Win32Native.SetWindowLongPtr(hWnd, GWL_STYLE, (uint)WS_POPUP);
+                        Win32Native.SetWindowLongPtr(hWnd, GWL_EXSTYLE, (uint)WS_EX_TOPMOST);
 
                         SetWindowPos(hWnd, HWND.HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 
@@ -450,59 +445,42 @@ internal unsafe class Win32AppPlatform : AppPlatform
             case WM_MENUCHAR:
                 // A menu is active and the user presses a key that does not correspond
                 // to any mnemonic or accelerator key. Ignore so we don't produce an error beep.
-                return MakeLResult(0, MNC_CLOSE);
+                return Win32Native.MakeLResult(0, MNC_CLOSE);
         }
 
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
 
-    private static int Loword(int number)
+
+    internal static string GetDefaultTitleName()
     {
-        return number & 0x0000FFFF;
+        string? assemblyTitle = GetAssemblyTitle(Assembly.GetEntryAssembly());
+        if (!string.IsNullOrEmpty(assemblyTitle))
+        {
+            return assemblyTitle!;
+        }
+
+        return "Vortice";
     }
 
-    private static int Hiword(int number)
+    private static string? GetAssemblyTitle(Assembly? assembly)
     {
-        return number >> 16;
-    }
+        if (assembly == null)
+        {
+            return null;
+        }
 
-    private static LRESULT MakeLResult(uint lowPart, uint highPart)
-    {
-        return new LRESULT((nint)((lowPart & 0xffff) | ((highPart & 0xffff) << 16)));
-    }
+        AssemblyTitleAttribute? atribute = assembly.GetCustomAttribute<AssemblyTitleAttribute>();
+        if (atribute != null)
+        {
+            return atribute.Title;
+        }
 
-    [DllImport("User32", ExactSpelling = true, EntryPoint = "GetWindowLongW", SetLastError = true)]
-    private static extern int GetWindowLong_x86(HWND hWnd, WINDOW_LONG_PTR_INDEX nIndex);
-
-    [DllImport("User32", ExactSpelling = true, EntryPoint = "GetWindowLongPtrW", SetLastError = true)]
-    private static extern IntPtr GetWindowLongPtrImpl_x64(HWND hWnd, WINDOW_LONG_PTR_INDEX nIndex);
-
-    public static IntPtr GetWindowLongPtr(HWND hWnd, WINDOW_LONG_PTR_INDEX nIndex)
-    {
-        return IntPtr.Size == 4 ? (IntPtr)GetWindowLong_x86(hWnd, nIndex) : GetWindowLongPtrImpl_x64(hWnd, nIndex);
-    }
-
-    [DllImport("User32", ExactSpelling = true, EntryPoint = "SetWindowLongW", SetLastError = true)]
-    private static extern int SetWindowLong_x86(HWND hWnd, WINDOW_LONG_PTR_INDEX nIndex, int dwNewLong);
-
-    [DllImport("User32", ExactSpelling = true, EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
-    private static extern IntPtr SetWindowLongPtr_x64(HWND hWnd, WINDOW_LONG_PTR_INDEX nIndex, IntPtr dwNewLong);
-
-    private static IntPtr SetWindowLongPtr(HWND hWnd, WINDOW_LONG_PTR_INDEX nIndex, uint value)
-    {
-        return IntPtr.Size == 4 ? (IntPtr)SetWindowLong_x86(hWnd, nIndex, (int)value) : SetWindowLongPtr_x64(hWnd, nIndex, new IntPtr(value));
-    }
-
-    private static IntPtr SetWindowLongPtr(HWND hWnd, WINDOW_LONG_PTR_INDEX nIndex, IntPtr dwNewLong)
-    {
-        return IntPtr.Size == 4 ? (IntPtr)SetWindowLong_x86(hWnd, nIndex, (int)dwNewLong) : SetWindowLongPtr_x64(hWnd, nIndex, dwNewLong);
+        return null;
     }
 }
 
-internal partial class AppPlatform
+partial class AppPlatform
 {
-    public static AppPlatform Create(Application application)
-    {
-        return new Win32AppPlatform(application);
-    }
+    public static AppPlatform Create() => new Win32AppPlatform();
 }

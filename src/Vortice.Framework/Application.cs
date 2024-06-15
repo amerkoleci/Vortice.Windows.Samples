@@ -1,79 +1,123 @@
 // Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
+using System.Diagnostics;
 using Vortice.Mathematics;
 
 namespace Vortice.Framework;
 
-public abstract partial class Application : IDisposable
+public abstract partial class Application
 {
     private readonly AppPlatform _platform;
+    private readonly object _tickLock = new();
 
-    public event EventHandler<EventArgs>? Disposed;
+    private readonly Stopwatch _stopwatch = new();
 
-    protected Application()
+    public AppWindow MainWindow => _platform.MainWindow;
+    public virtual SizeI DefaultSize => new(1280, 720);
+    public bool EnableVerticalSync { get; set; } = true;
+    public float AspectRatio => MainWindow.AspectRatio;
+    public bool IsRunning { get; private set; }
+    public bool IsExiting { get; private set; }
+    public AppTime Time { get; } = new();
+
+    public static Application? Current { get; private set; }
+
+    protected Application(AppPlatform? platform = default)
     {
-        _platform = AppPlatform.Create(this);
-        //_platform.Activated += GamePlatform_Activated;
-        //_platform.Deactivated += GamePlatform_Deactivated;
-        _platform.Ready += OnPlatformReady;
+        _platform = platform ?? AppPlatform.Create();
+        _platform.Tick = Tick;
+        _platform.Exiting = OnPlatformExiting;
 
         Current = this;
     }
 
-    public static Application? Current { get; private set; }
-
-    public bool IsDisposed { get; private set; }
-    public Window MainWindow => _platform.MainWindow;
-    public virtual SizeI DefaultSize => new(1280, 720);
-    public bool EnableVerticalSync { get; set; } = true;
-    public float AspectRatio => (float)MainWindow.ClientSize.Width / MainWindow.ClientSize.Height;
-
-    ~Application()
-    {
-        Dispose(dispose: false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(dispose: true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool dispose)
-    {
-        if (dispose && !IsDisposed)
-        {
-            Disposed?.Invoke(this, EventArgs.Empty);
-            IsDisposed = true;
-        }
-    }
+    protected abstract void OnShutdown();
 
     public void Run()
     {
+        if (IsRunning)
+            throw new InvalidOperationException("This application is already running.");
+
+        IsRunning = true;
+        Initialize();
+        LoadContentAsync();
+
+        _stopwatch.Start();
+        Time.Update(_stopwatch.Elapsed, TimeSpan.Zero);
+
+        //BeginRun();
         _platform.Run();
 
         if (_platform.IsBlockingRun)
         {
+            //OnShutdown();
         }
     }
 
     public void Exit()
     {
-        _platform.RequestExit();
+        if (IsRunning)
+        {
+            IsExiting = true;
+            _platform.RequestExit();
+        }
     }
 
-    internal void Tick()
+    private void CheckEndRun()
     {
-        if (!BeginDraw())
-            return;
+        if (IsExiting && IsRunning)
+        {
+            //EndRun();
 
-        Render();
+            _stopwatch.Stop();
 
-        EndDraw();
+            IsRunning = false;
+        }
+    }
+
+    public void Tick()
+    {
+        lock (_tickLock)
+        {
+            if (IsExiting)
+            {
+                CheckEndRun();
+                return;
+            }
+
+            try
+            {
+                TimeSpan elapsedTime = _stopwatch.Elapsed - Time.Total;
+                Time.Update(_stopwatch.Elapsed, elapsedTime);
+
+                Update(Time);
+
+                if (BeginDraw())
+                {
+                    Draw(Time);
+                }
+            }
+            finally
+            {
+                EndDraw();
+
+                CheckEndRun();
+            }
+        }
     }
 
     protected virtual void Initialize()
+    {
+
+    }
+
+    protected virtual Task LoadContentAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    protected virtual void Update(AppTime time)
     {
 
     }
@@ -83,24 +127,26 @@ public abstract partial class Application : IDisposable
         return true;
     }
 
+    protected virtual void Draw(AppTime time)
+    {
+
+    }
+
     protected virtual void EndDraw()
     {
     }
 
     protected virtual void OnKeyboardEvent(KeyboardKey key, bool pressed)
     {
-        if(key == KeyboardKey.Escape && pressed)
+        if (key == KeyboardKey.Escape && pressed)
         {
             Exit();
         }
     }
 
-    protected internal abstract void Render();
-
-    // Platform events
-    internal void OnPlatformReady(object? sender, EventArgs e)
+    private void OnPlatformExiting()
     {
-        Initialize();
+        OnShutdown();
     }
 
     internal void OnPlatformKeyboardEvent(KeyboardKey key, bool pressed)

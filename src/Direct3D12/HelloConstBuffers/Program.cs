@@ -101,19 +101,14 @@ static class Program
             _pipelineState = Device.CreateGraphicsPipelineState<ID3D12PipelineState>(psoDesc);
         }
 
-        protected override void Dispose(bool dispose)
+        protected override void OnShutdown()
         {
-            if (dispose)
-            {
-                _cbvHeap.Dispose();
-                _constantBuffer.Unmap(0);
-                _constantBuffer.Dispose();
-                _vertexBuffer.Dispose();
-                _rootSignature.Dispose();
-                _pipelineState.Dispose();
-            }
-
-            base.Dispose(dispose);
+            _cbvHeap.Dispose();
+            _constantBuffer.Unmap(0);
+            _constantBuffer.Dispose();
+            _vertexBuffer.Dispose();
+            _rootSignature.Dispose();
+            _pipelineState.Dispose();
         }
 
         protected override void OnRender()
@@ -163,7 +158,7 @@ static class Program
 
     static void Main()
     {
-        using HelloConstBuffers app = new();
+        HelloConstBuffers app = new();
         app.Run();
     }
 }

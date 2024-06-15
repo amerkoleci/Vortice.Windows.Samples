@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -25,7 +24,6 @@ public sealed class MipmappingApp : D3D11Application
     private ID3D11VertexShader _vertexShader;
     private ID3D11PixelShader _pixelShader;
     private ID3D11InputLayout _inputLayout;
-    private Stopwatch _clock;
     private Stopwatch _mipLevelslock;
     private float _time;
     private int _mipLevel;
@@ -51,27 +49,23 @@ public sealed class MipmappingApp : D3D11Application
         _pixelShader = Device.CreatePixelShader(pixelShaderByteCode.Span);
         _inputLayout = Device.CreateInputLayout(VertexPositionNormalTexture.InputElements, vertexShaderByteCode.Span);
 
-        _clock = Stopwatch.StartNew();
         _mipLevelslock = Stopwatch.StartNew();
     }
 
-    protected override void Dispose(bool dispose)
+    protected override void OnShutdown()
     {
-        if (dispose)
-        {
-            _vertexBuffer.Dispose();
-            _indexBuffer.Dispose();
-            _constantBuffer.Dispose();
-            _mipLevelsCB.Dispose();
-            _textureSRV.Dispose();
-            _textureSampler.Dispose();
-            _texture.Dispose();
-            _vertexShader.Dispose();
-            _pixelShader.Dispose();
-            _inputLayout.Dispose();
-        }
+        _vertexBuffer.Dispose();
+        _indexBuffer.Dispose();
+        _constantBuffer.Dispose();
+        _mipLevelsCB.Dispose();
+        _textureSRV.Dispose();
+        _textureSampler.Dispose();
+        _texture.Dispose();
+        _vertexShader.Dispose();
+        _pixelShader.Dispose();
+        _inputLayout.Dispose();
 
-        base.Dispose(dispose);
+        base.OnShutdown();
     }
 
     protected unsafe override void OnRender()
@@ -79,7 +73,7 @@ public sealed class MipmappingApp : D3D11Application
         DeviceContext.ClearRenderTargetView(ColorTextureView, Colors.CornflowerBlue);
         DeviceContext.ClearDepthStencilView(DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
 
-        float frameTime = _clock.ElapsedMilliseconds / 1000.0f;
+        float deltaTime = (float)Time.Total.TotalSeconds;
         _time += _mipLevelslock.ElapsedMilliseconds / 1000.0f;
         if (_time > 2)
         {
@@ -97,7 +91,7 @@ public sealed class MipmappingApp : D3D11Application
             _mipLevelsCB.SetData(DeviceContext, ref mipData);
         }
 
-        Matrix4x4 world = Matrix4x4.CreateRotationX(frameTime) * Matrix4x4.CreateRotationY(frameTime * 2) * Matrix4x4.CreateRotationZ(frameTime * .7f);
+        Matrix4x4 world = Matrix4x4.CreateRotationX(deltaTime) * Matrix4x4.CreateRotationY(deltaTime * 2) * Matrix4x4.CreateRotationZ(deltaTime * .7f);
 
         Matrix4x4 view = Matrix4x4.CreateLookAt(new Vector3(0, 0, 25), new Vector3(0, 0, 0), Vector3.UnitY);
         Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView((float)Math.PI / 4, AspectRatio, 0.1f, 100);
@@ -124,7 +118,7 @@ public sealed class MipmappingApp : D3D11Application
 
     public static void Main()
     {
-        using MipmappingApp app = new();
+        MipmappingApp app = new();
         app.Run();
     }
 }

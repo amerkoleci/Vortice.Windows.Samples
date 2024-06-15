@@ -20,7 +20,7 @@ static class Program
         private readonly SizeI _videoSize;
 
         public VideoApp(string videoFile)
-            : base(DeviceCreationFlags.BgraSupport | DeviceCreationFlags.VideoSupport)
+            : base(creationFlags: DeviceCreationFlags.BgraSupport | DeviceCreationFlags.VideoSupport)
         {
             // Add multi thread protection on device
             using (ID3D11Multithread multithread = Device.QueryInterface<ID3D11Multithread>())
@@ -66,15 +66,13 @@ static class Program
             mediaEngineEx.Play();
         }
 
-        protected override void Dispose(bool dispose)
+        protected override void OnShutdown() 
         {
             _colorTextureSurface.Dispose();
             _dxgiDeviceManager.Dispose();
             _mediaEngine.Shutdown().CheckError();
             _mfStream.Dispose();
             _mediaEngine.Dispose();
-
-            base.Dispose(dispose);
         }
 
         protected override void OnRender()
@@ -129,7 +127,7 @@ static class Program
             return;
         }
 
-        using VideoApp app = new(openFileDialog.FileName);
+        VideoApp app = new(openFileDialog.FileName);
         app.Run();
 
         MFShutdown().CheckError();

@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(_VorticeTargetPlatformIsWindows)' == 'True' AND $(TargetFramework.Contains('-windows10'))">
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <EnableMsixTooling>true</EnableMsixTooling>
     <UseWinUI>true</UseWinUI>
@@ -24,8 +25,14 @@
 
   <ItemGroup Condition="'$(_VorticeTargetPlatformIsWindows)' == 'True' AND $(TargetFramework.Contains('-windows10'))">
     <Compile Include="Platform\WinUI\**\*.cs" />
+    
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <!--<PackageReference Include="Microsoft.Graphics.Win2D" />-->
+    <PackageReference Include="Vortice.WinUI" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Platform\Windows\Win32Native.cs" />
   </ItemGroup>
 
   <ItemGroup>

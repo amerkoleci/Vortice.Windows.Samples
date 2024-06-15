@@ -36,7 +36,7 @@ public sealed class BufferOffsetsApp : D3D11Application
         };
         _vertexBuffer = Device.CreateBuffer(quadVertices, BindFlags.VertexBuffer);
 
-        ReadOnlySpan<ushort> quadIndices = stackalloc ushort[] {
+        ReadOnlySpan<ushort> quadIndices = [
             0,
             1,
             2,
@@ -46,7 +46,7 @@ public sealed class BufferOffsetsApp : D3D11Application
             0,
             2,
             3
-        };
+        ];
         _indexBuffer = Device.CreateBuffer(quadIndices, BindFlags.IndexBuffer);
 
         ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode("HelloTriangle.hlsl", "VSMain", "vs_4_0");
@@ -57,17 +57,14 @@ public sealed class BufferOffsetsApp : D3D11Application
         _inputLayout = Device.CreateInputLayout(VertexPosition2DColor.InputElements, vertexShaderByteCode.Span);
     }
 
-    protected override void Dispose(bool dispose)
+    protected override void OnShutdown()
     {
-        if (dispose)
-        {
-            _vertexBuffer.Dispose();
-            _vertexShader.Dispose();
-            _pixelShader.Dispose();
-            _inputLayout.Dispose();
-        }
+        _vertexBuffer.Dispose();
+        _vertexShader.Dispose();
+        _pixelShader.Dispose();
+        _inputLayout.Dispose();
 
-        base.Dispose(dispose);
+        base.OnShutdown();
     }
 
     protected override void OnRender()
@@ -103,7 +100,7 @@ public sealed class BufferOffsetsApp : D3D11Application
 
     public static void Main()
     {
-        using BufferOffsetsApp app = new();
+        BufferOffsetsApp app = new();
         app.Run();
     }
 }

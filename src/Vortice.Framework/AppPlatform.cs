@@ -1,92 +1,42 @@
 // Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
-using System.Reflection;
-
 namespace Vortice.Framework;
 
-internal abstract partial class AppPlatform : IDisposable
+public abstract partial class AppPlatform
 {
-    private bool _disposed;
-
-    protected AppPlatform(Application application)
+    protected AppPlatform()
     {
-        Application = application;
     }
-
-    public Application Application { get; }
 
     public abstract bool IsBlockingRun { get; }
-    public abstract Window MainWindow { get; }
+    public abstract AppWindow MainWindow { get; }
 
-    public event EventHandler<EventArgs>? Ready;
-
-    public event EventHandler<EventArgs>? Activated;
-
-    public event EventHandler<EventArgs>? Deactivated;
-
-    ~AppPlatform()
-    {
-        Dispose(dispose: false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(dispose: true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool dispose)
-    {
-        if (dispose && !_disposed)
-        {
-            _disposed = true;
-        }
-    }
+    public Action? Tick;
+    public Action? Exiting;
+    public Action? Activated;
+    public Action? Deactivated;
 
     public abstract void Run();
     public abstract void RequestExit();
 
-    protected void OnReady()
+    protected void OnTick()
     {
-        Ready?.Invoke(this, EventArgs.Empty);
+        Tick?.Invoke();
+    }
+
+    protected void OnExiting()
+    {
+        Exiting?.Invoke();
     }
 
     protected void OnActivated()
     {
-        Activated?.Invoke(this, EventArgs.Empty);
+        Activated?.Invoke();
     }
 
     protected void OnDeactivated()
     {
-        Deactivated?.Invoke(this, EventArgs.Empty);
+        Deactivated?.Invoke();
     }
-
-    internal static string GetDefaultTitleName()
-    {
-        string? assemblyTitle = GetAssemblyTitle(Assembly.GetEntryAssembly());
-        if (!string.IsNullOrEmpty(assemblyTitle))
-        {
-            return assemblyTitle!;
-        }
-
-        return "Vortice";
-    }
-
-    private static string? GetAssemblyTitle(Assembly? assembly)
-    {
-        if (assembly == null)
-        {
-            return null;
-        }
-
-        AssemblyTitleAttribute? atribute = assembly.GetCustomAttribute<AssemblyTitleAttribute>();
-        if (atribute != null)
-        {
-            return atribute.Title;
-        }
-
-        return null;
-    }
-
 }

@@ -56,17 +56,14 @@ public sealed class DrawQuadApp : D3D11Application
         _inputLayout = Device.CreateInputLayout(VertexPositionColor.InputElements, vertexShaderByteCode.Span);
     }
 
-    protected override void Dispose(bool dispose)
+    protected override void OnShutdown()
     {
-        if (dispose)
-        {
-            _vertexBuffer.Dispose();
-            _vertexShader.Dispose();
-            _pixelShader.Dispose();
-            _inputLayout.Dispose();
-        }
+        _vertexBuffer.Dispose();
+        _vertexShader.Dispose();
+        _pixelShader.Dispose();
+        _inputLayout.Dispose();
 
-        base.Dispose(dispose);
+        base.OnShutdown();
     }
 
     protected override void OnRender()
@@ -103,7 +100,7 @@ public sealed class DrawQuadApp : D3D11Application
 
     public static void Main()
     {
-        using DrawQuadApp app = new();
+        DrawQuadApp app = new();
         app.Run();
     }
 }

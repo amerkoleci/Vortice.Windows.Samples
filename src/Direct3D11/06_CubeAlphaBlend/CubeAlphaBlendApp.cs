@@ -22,7 +22,6 @@ public class CubeAlphaBlendApp : D3D11Application
     private ID3D11RasterizerState _rasterizerState;
     private ID3D11DepthStencilState _depthStencilState;
     private ID3D11BlendState _blendState;
-    private Stopwatch _clock;
 
     protected override void Initialize()
     {
@@ -40,26 +39,21 @@ public class CubeAlphaBlendApp : D3D11Application
         _rasterizerState = Device.CreateRasterizerState(RasterizerDescription.CullNone);
         _depthStencilState = Device.CreateDepthStencilState(DepthStencilDescription.Default);
         _blendState = Device.CreateBlendState(BlendDescription.NonPremultiplied);
-
-        _clock = Stopwatch.StartNew();
     }
 
-    protected override void Dispose(bool dispose)
+    protected override void OnShutdown()
     {
-        if (dispose)
-        {
-            _vertexBuffer.Dispose();
-            _indexBuffer.Dispose();
-            _constantBuffer.Dispose();
-            _vertexShader.Dispose();
-            _pixelShader.Dispose();
-            _inputLayout.Dispose();
-            _rasterizerState.Dispose();
-            _depthStencilState.Dispose();
-            _blendState.Dispose();
-        }
+        _vertexBuffer.Dispose();
+        _indexBuffer.Dispose();
+        _constantBuffer.Dispose();
+        _vertexShader.Dispose();
+        _pixelShader.Dispose();
+        _inputLayout.Dispose();
+        _rasterizerState.Dispose();
+        _depthStencilState.Dispose();
+        _blendState.Dispose();
 
-        base.Dispose(dispose);
+        base.OnShutdown();
     }
 
     protected unsafe override void OnRender()
@@ -67,8 +61,8 @@ public class CubeAlphaBlendApp : D3D11Application
         DeviceContext.ClearRenderTargetView(ColorTextureView, new Color4(0.5f, 0.5f, 0.5f, 1.0f));
         DeviceContext.ClearDepthStencilView(DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
 
-        float time = _clock.ElapsedMilliseconds / 1000.0f;
-        Matrix4x4 world = Matrix4x4.CreateRotationX(time) * Matrix4x4.CreateRotationY(time * 2) * Matrix4x4.CreateRotationZ(time * .7f);
+        float deltaTime = (float)Time.Total.TotalSeconds;
+        Matrix4x4 world = Matrix4x4.CreateRotationX(deltaTime) * Matrix4x4.CreateRotationY(deltaTime * 2) * Matrix4x4.CreateRotationZ(deltaTime * .7f);
 
         Matrix4x4 view = Matrix4x4.CreateLookAt(new Vector3(0, 0, 25), new Vector3(0, 0, 0), Vector3.UnitY);
         Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView((float)Math.PI / 4, AspectRatio, 0.1f, 100);
@@ -89,7 +83,7 @@ public class CubeAlphaBlendApp : D3D11Application
         DeviceContext.VSSetConstantBuffer(0, _constantBuffer);
         DeviceContext.IASetVertexBuffer(0, _vertexBuffer, VertexPositionColor.SizeInBytes);
         DeviceContext.IASetIndexBuffer(_indexBuffer, Format.R16_UInt, 0);
-        
+
 
         DeviceContext.DrawIndexed(36, 0, 0);
     }
@@ -141,8 +135,8 @@ public class CubeAlphaBlendApp : D3D11Application
             indices[indicesCount++] = (ushort)(vbase + 1);
             indices[indicesCount++] = (ushort)(vbase + 2);
 
-            indices[indicesCount++] =(ushort)(vbase + 0);
-            indices[indicesCount++] =(ushort)(vbase + 2);
+            indices[indicesCount++] = (ushort)(vbase + 0);
+            indices[indicesCount++] = (ushort)(vbase + 2);
             indices[indicesCount++] = (ushort)(vbase + 3);
 
             // Four vertices per face.
@@ -181,7 +175,7 @@ public class CubeAlphaBlendApp : D3D11Application
 
     static void Main()
     {
-        using CubeAlphaBlendApp app = new();
+        CubeAlphaBlendApp app = new();
         app.Run();
     }
 }
