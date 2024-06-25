@@ -23,6 +23,10 @@ namespace Vortice.Framework;
 /// </summary>
 public abstract class D3D12Application : Application
 {
+    private const ResourceStates c_initialCopyTargetState = ResourceStates.Common;
+    private const ResourceStates c_initialReadTargetState = ResourceStates.Common;
+    private const ResourceStates c_initialUAVTargetState = ResourceStates.Common;
+
     private readonly Format _colorFormat;
     private readonly Format _depthStencilFormat;
     private readonly FeatureLevel _minFeatureLevel;
@@ -42,6 +46,7 @@ public abstract class D3D12Application : Application
     private readonly ID3D12DescriptorHeap? _dsvDescriptorHeap;
 
     private readonly ID3D12CommandAllocator[] _commandAllocators;
+
 
     protected D3D12Application(AppPlatform? platform = default,
         Format colorFormat = Format.B8G8R8A8_UNorm,
@@ -248,6 +253,9 @@ public abstract class D3D12Application : Application
         // Create a command list for recording graphics commands.
         CommandList = Device.CreateCommandList<ID3D12GraphicsCommandList4>(CommandListType.Direct, _commandAllocators[0]);
         CommandList.Close();
+
+        // Create UploadBatch
+        UploadBatch = new D3D12ResourceUploadBatch(Device);
     }
 
     public ID3D12Device2 Device { get; }
@@ -282,9 +290,18 @@ public abstract class D3D12Application : Application
 
     public bool UseRenderPass { get; set; }
 
-    protected override void OnShutdown()
+    public D3D12ResourceUploadBatch UploadBatch { get; }
+
+    protected virtual void OnDestroy()
+    {
+
+    }
+
+    protected sealed override void OnShutdown()
     {
         WaitForGpu();
+
+        OnDestroy();
 
         DepthStencilTexture?.Dispose();
         _dsvDescriptorHeap?.Dispose();
@@ -298,10 +315,28 @@ public abstract class D3D12Application : Application
 
         _frameFence.Dispose();
         _rtvDescriptorHeap.Dispose();
+        //UploadBatch.Dispose();
 
         SwapChain.Dispose();
         DirectQueue.Dispose();
+
+#if DEBUG
+        uint refCount = Device.Release();
+        if (refCount > 0)
+        {
+            Debug.WriteLine($"Direct3D12: There are {refCount} unreleased references left on the device");
+
+            ID3D12DebugDevice? d3d12DebugDevice = Device.QueryInterfaceOrNull<ID3D12DebugDevice>();
+            if (d3d12DebugDevice != null)
+            {
+                d3d12DebugDevice.ReportLiveDeviceObjects(ReportLiveDeviceObjectFlags.Detail | ReportLiveDeviceObjectFlags.IgnoreInternal);
+                d3d12DebugDevice.Dispose();
+            }
+        }
+#else
         Device.Dispose();
+#endif
+
         _dxgiFactory.Dispose();
 
 #if DEBUG
@@ -499,6 +534,87 @@ public abstract class D3D12Application : Application
         }
 
         // TODO:
+    }
+
+    protected unsafe ID3D12Resource CreateStaticBuffer<T>(T[] data, ResourceStates afterState)
+        where T : unmanaged
+    {
+        Span<T> span = data;
+        return CreateStaticBuffer(span, afterState);
+    }
+
+    protected unsafe ID3D12Resource CreateStaticBuffer<T>(Span<T> data, ResourceStates afterState)
+        where T : unmanaged
+    {
+        ulong sizeInBytes = (ulong)(sizeof(T) * data.Length);
+
+        ulong c_maxBytes = /*D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_A_TERM*/128u * 1024u * 1024u;
+
+        if (sizeInBytes > c_maxBytes)
+        {
+            throw new InvalidOperationException($"ERROR: Resource size too large for DirectX 12 (size {sizeInBytes})");
+        }
+
+        ID3D12Resource buffer = Device.CreateCommittedResource(
+            HeapType.Default,
+            HeapFlags.None,
+            ResourceDescription.Buffer(sizeInBytes),
+            c_initialCopyTargetState
+        );
+
+        fixed (T* dataPtr = data)
+        {
+            SubresourceData initData = new()
+            {
+                Data = (nint)dataPtr,
+            };
+
+            UploadBatch.Upload(buffer, 0, &initData, 1);
+
+            UploadBatch.Transition(buffer, ResourceStates.CopyDest, afterState);
+
+            return buffer;
+        }
+    }
+
+    protected unsafe ID3D12Resource CreateTexture2D<T>(
+        int width, int height, Format format,
+        Span<T> data,
+        ResourceStates afterState = ResourceStates.PixelShaderResource,
+        ResourceFlags flags = ResourceFlags.None)
+        where T : unmanaged
+    {
+        bool generateMips = false;
+        ushort mipLevels = 1;
+
+        ID3D12Resource texture = Device.CreateCommittedResource(
+            HeapType.Default,
+            HeapFlags.None,
+            ResourceDescription.Texture2D(format, (uint)width, (uint)height, 1, mipLevels, 1, 0, flags),
+            c_initialCopyTargetState
+        );
+
+        fixed (T* dataPtr = data)
+        {
+            FormatHelper.GetSurfaceInfo(format, width, height, out int rowPitch, out int slicePitch);
+            SubresourceData initData = new()
+            {
+                Data = (nint)dataPtr,
+                RowPitch = rowPitch,
+                SlicePitch = slicePitch
+            };
+
+            UploadBatch.Upload(texture, 0, &initData, 1);
+
+            UploadBatch.Transition(texture, ResourceStates.CopyDest, afterState);
+
+            if (generateMips)
+            {
+                //UploadBatch.GenerateMips(texture);
+            }
+
+            return texture;
+        }
     }
 
     protected static ReadOnlyMemory<byte> CompileBytecode(

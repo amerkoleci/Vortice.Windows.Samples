@@ -94,25 +94,25 @@ public class CubeAlphaBlendApp : D3D11Application
         List<VertexPositionColor> vertices = new();
         Span<ushort> indices = stackalloc ushort[36];
 
-        Vector3[] faceNormals = new Vector3[CubeFaceCount]
-        {
+        Vector3[] faceNormals =
+        [
             Vector3.UnitZ,
             new Vector3(0.0f, 0.0f, -1.0f),
             Vector3.UnitX,
             new Vector3(-1.0f, 0.0f, 0.0f),
             Vector3.UnitY,
             new Vector3(0.0f, -1.0f, 0.0f),
-        };
+        ];
 
-        Color4[] faceColors = new Color4[CubeFaceCount]
-        {
+        Color4[] faceColors =
+        [
             new(1.0f, 0.0f, 0.0f, 0.4f),
             new(0.0f, 1.0f, 0.0f, 0.4f),
             new(0.0f, 0.0f, 1.0f, 0.4f),
             new(1.0f, 1.0f, 0.0f, 0.4f),
             new(1.0f, 0.0f, 1.0f, 0.4f),
             new(0.0f, 1.0f, 1.0f, 0.4f),
-        };
+        ];
 
         Vector3 tsize = size / 2.0f;
 

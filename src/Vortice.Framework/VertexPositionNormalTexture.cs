@@ -13,12 +13,19 @@ public readonly record struct VertexPositionNormalTexture
 {
     public static readonly unsafe int SizeInBytes = sizeof(VertexPositionNormalTexture);
 
-    public static InputElementDescription[] InputElements => new[]
-    {
+    public static InputElementDescription[] InputElements =>
+    [
         new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
         new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
         new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 24, 0)
-    };
+    ];
+
+    public static readonly Direct3D12.InputElementDescription[] InputElementsD3D12 =
+    [
+        new Direct3D12.InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
+        new Direct3D12.InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
+        new Direct3D12.InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 24, 0)
+    ];
 
     public VertexPositionNormalTexture(in Vector3 position, in Vector3 normal, in Vector2 textureCoordinate)
     {

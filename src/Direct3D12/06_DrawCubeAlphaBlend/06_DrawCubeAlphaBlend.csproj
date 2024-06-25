@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Shaders\**" CopyToOutputDirectory="PreserveNewest" />
+    
+    <ProjectReference Include="..\..\Vortice.Framework\Vortice.Framework.csproj" />
+  </ItemGroup>
+
+</Project>
