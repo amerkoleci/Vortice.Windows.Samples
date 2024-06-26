@@ -12,7 +12,6 @@ using Vortice.DXGI.Debug;
 using Vortice.Mathematics;
 using static Vortice.Direct3D11.D3D11;
 using static Vortice.DXGI.DXGI;
-using static Vortice.Framework.Utilities;
 
 namespace Vortice.Framework;
 

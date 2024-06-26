@@ -16,8 +16,8 @@ unsafe class DrawCubeApp : D3D12Application
 {
     private ID3D12Resource _vertexBuffer;
     private ID3D12Resource _indexBuffer;
-    private void* _cbvData = default;
     private ID3D12Resource _constantBuffer;
+    private void* _cbvData = default;
     private ID3D12RootSignature _rootSignature;
     private ID3D12PipelineState _pipelineState;
 
@@ -96,9 +96,7 @@ unsafe class DrawCubeApp : D3D12Application
         Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 4, AspectRatio, 0.1f, 100);
         Matrix4x4 viewProjection = Matrix4x4.Multiply(view, projection);
         Matrix4x4 worldViewProjection = Matrix4x4.Multiply(world, viewProjection);
-
         Unsafe.Copy(_cbvData, ref worldViewProjection);
-        //Unsafe.CopyBlock(ref _cbvData[0], ref Unsafe.As<SceneConstantBuffer, byte>(ref _constantBufferData), (uint)sizeof(SceneConstantBuffer));
 
         Color4 clearColor = new(0.0f, 0.2f, 0.4f, 1.0f);
         CommandList.ClearRenderTargetView(ColorTextureView, clearColor);

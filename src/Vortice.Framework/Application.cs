@@ -2,7 +2,20 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Diagnostics;
+using System.Drawing;
+using System.Runtime.InteropServices;
+using SharpGen.Runtime;
+using Vortice.Direct3D;
+using Vortice.Direct3D12;
+using Vortice.Direct3D12.Debug;
+using Vortice.Dxc;
+using Vortice.DXGI;
+using Vortice.DXGI.Debug;
+using Vortice.Framework;
 using Vortice.Mathematics;
+using static Vortice.Direct3D12.D3D12;
+using static Vortice.DXGI.DXGI;
+using static Vortice.Framework.Utilities;
 
 namespace Vortice.Framework;
 
@@ -12,6 +25,7 @@ public abstract partial class Application
     private readonly object _tickLock = new();
 
     private readonly Stopwatch _stopwatch = new();
+    private int _backBufferIndex;
 
     public AppWindow MainWindow => _platform.MainWindow;
     public virtual SizeI DefaultSize => new(1280, 720);

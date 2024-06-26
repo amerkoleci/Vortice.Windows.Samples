@@ -85,7 +85,7 @@ unsafe class DrawConstBuffersApp : D3D12Application
             RasterizerState = RasterizerDescription.CullCounterClockwise,
             BlendState = BlendDescription.Opaque,
             DepthStencilState = DepthStencilDescription.Default,
-            RenderTargetFormats = new[] { ColorFormat },
+            RenderTargetFormats = [ColorFormat],
             DepthStencilFormat = DepthStencilFormat,
             SampleDescription = SampleDescription.Default
         };

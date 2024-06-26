@@ -38,15 +38,11 @@ public abstract class D3D12Application : Application
     private readonly ID3D12Fence _frameFence;
     private readonly AutoResetEvent _frameFenceEvent;
 
-    private readonly ID3D12DescriptorHeap _rtvDescriptorHeap;
-    private readonly int _rtvDescriptorSize;
     private readonly ID3D12Resource[] _renderTargets;
-    private int _backBufferIndex;
-
-    private readonly ID3D12DescriptorHeap? _dsvDescriptorHeap;
+    private readonly int[] _renderTargetDescriptorIndexes;
+    private int _depthStencilViewDescriptorIndex = -1;
 
     private readonly ID3D12CommandAllocator[] _commandAllocators;
-
 
     protected D3D12Application(AppPlatform? platform = default,
         Format colorFormat = Format.B8G8R8A8_UNorm,
@@ -190,59 +186,29 @@ public abstract class D3D12Application : Application
         DirectQueue = Device.CreateCommandQueue(CommandListType.Direct);
         DirectQueue.Name = "Direct Queue";
 
+        // Create Descriptor Allocator
+        // Init CPU descriptor allocators
+        const int renderTargetViewHeapSize = 1024;
+        const int depthStencilViewHeapSize = 256;
+
+        // Maximum number of CBV/SRV/UAV descriptors in heap for Tier 1
+        const int shaderResourceViewHeapSize = 1_000_000;
+        // Maximum number of samplers descriptors in heap for Tier 1
+        const int samplerHeapSize = 2048; // 2048 ->  Tier1 limit
+
+        RenderTargetViewHeap = new(Device, DescriptorHeapType.RenderTargetView, renderTargetViewHeapSize);
+        DepthStencilViewHeap = new(Device, DescriptorHeapType.DepthStencilView, depthStencilViewHeapSize);
+
         // Create synchronization objects.
         _fenceValues = new ulong[MainWindow.BackBufferCount];
         _frameFence = Device.CreateFence(_fenceValues[0]);
         _frameFence.Name = "Frame Fence";
         _frameFenceEvent = new AutoResetEvent(false);
 
-        // Create SwapChain
-        using (IDXGISwapChain1 tempSwapChain = MainWindow.CreateSwapChain(_dxgiFactory, DirectQueue, colorFormat))
-        {
-            SwapChain = tempSwapChain.QueryInterface<IDXGISwapChain3>();
-        }
-
-        // Create RTV heap to handle SwapChain RTVs
-        _rtvDescriptorHeap = Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, MainWindow.BackBufferCount));
-        _rtvDescriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
-
-        // Create frame resources.
-        {
-            CpuDescriptorHandle rtvHandle = _rtvDescriptorHeap.GetCPUDescriptorHandleForHeapStart();
-
-            // Create a RTV for each frame.
-            _renderTargets = new ID3D12Resource[MainWindow.BackBufferCount];
-            for (int i = 0; i < _renderTargets.Length; i++)
-            {
-                _renderTargets[i] = SwapChain.GetBuffer<ID3D12Resource>(i);
-                Device.CreateRenderTargetView(_renderTargets[i], null, rtvHandle);
-                rtvHandle += _rtvDescriptorSize;
-            }
-        }
-
-        if (_depthStencilFormat != Format.Unknown)
-        {
-            ResourceDescription depthStencilDesc = ResourceDescription.Texture2D(_depthStencilFormat, (uint)MainWindow.ClientSize.Width, (uint)MainWindow.ClientSize.Height, 1, 1);
-            depthStencilDesc.Flags |= ResourceFlags.AllowDepthStencil;
-
-            DepthStencilTexture = Device.CreateCommittedResource(
-                new HeapProperties(HeapType.Default),
-                HeapFlags.None,
-                depthStencilDesc,
-                ResourceStates.DepthWrite,
-                new(_depthStencilFormat, 1.0f, 0)
-                );
-            DepthStencilTexture.Name = "DepthStencil Texture";
-
-            DepthStencilViewDescription dsViewDesc = new()
-            {
-                Format = _depthStencilFormat,
-                ViewDimension = DepthStencilViewDimension.Texture2D
-            };
-
-            _dsvDescriptorHeap = Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.DepthStencilView, 1));
-            Device.CreateDepthStencilView(DepthStencilTexture, dsViewDesc, _dsvDescriptorHeap.GetCPUDescriptorHandleForHeapStart());
-        }
+        // Create frame data
+        _renderTargets = new ID3D12Resource[MainWindow.BackBufferCount];
+        _renderTargetDescriptorIndexes = new int[MainWindow.BackBufferCount];
+        CreateWindowSizeDependentResources();
 
         _commandAllocators = new ID3D12CommandAllocator[MainWindow.BackBufferCount];
         for (int i = 0; i < _commandAllocators.Length; i++)
@@ -263,25 +229,29 @@ public abstract class D3D12Application : Application
 
     public ID3D12CommandQueue DirectQueue { get; }
 
-    public IDXGISwapChain3 SwapChain { get; }
-    public int BackBufferIndex => _backBufferIndex;
+    public D3D12DescriptorAllocator RenderTargetViewHeap { get; }
+    public D3D12DescriptorAllocator DepthStencilViewHeap { get; }
+
+    public IDXGISwapChain3 SwapChain { get; private set; }
+    public int BackBufferIndex { get; private set; }
 
     public Format ColorFormat => _colorFormat;
-    public ID3D12Resource ColorTexture => _renderTargets[_backBufferIndex];
+    public ColorSpaceType ColorSpace { get; private set; } = ColorSpaceType.RgbFullG22NoneP709;
+    public ID3D12Resource ColorTexture => _renderTargets[BackBufferIndex];
     public CpuDescriptorHandle ColorTextureView
     {
-        get => new(_rtvDescriptorHeap.GetCPUDescriptorHandleForHeapStart(), _backBufferIndex, _rtvDescriptorSize);
+        get => RenderTargetViewHeap.GetCpuHandle(_renderTargetDescriptorIndexes[BackBufferIndex]);
     }
 
     public Format DepthStencilFormat => _depthStencilFormat;
     public ID3D12Resource? DepthStencilTexture { get; private set; }
     public CpuDescriptorHandle? DepthStencilView
     {
-        get => _dsvDescriptorHeap != null ? _dsvDescriptorHeap.GetCPUDescriptorHandleForHeapStart() : default;
+        get => DepthStencilViewHeap.GetCpuHandle(_depthStencilViewDescriptorIndex);
     }
 
     public ID3D12GraphicsCommandList4 CommandList { get; }
-    public ID3D12CommandAllocator CommandAllocator => _commandAllocators[_backBufferIndex];
+    public ID3D12CommandAllocator CommandAllocator => _commandAllocators[BackBufferIndex];
 
     /// <summary>
     /// Gets the viewport.
@@ -304,7 +274,9 @@ public abstract class D3D12Application : Application
         OnDestroy();
 
         DepthStencilTexture?.Dispose();
-        _dsvDescriptorHeap?.Dispose();
+
+        RenderTargetViewHeap.Dispose();
+        DepthStencilViewHeap.Dispose();
 
         for (int i = 0; i < _commandAllocators.Length; i++)
         {
@@ -314,7 +286,6 @@ public abstract class D3D12Application : Application
         CommandList.Dispose();
 
         _frameFence.Dispose();
-        _rtvDescriptorHeap.Dispose();
         //UploadBatch.Dispose();
 
         SwapChain.Dispose();
@@ -351,7 +322,7 @@ public abstract class D3D12Application : Application
     protected void WaitForGpu()
     {
         // Schedule a Signal command in the GPU queue.
-        ulong fenceValue = _fenceValues[_backBufferIndex];
+        ulong fenceValue = _fenceValues[BackBufferIndex];
         DirectQueue.Signal(_frameFence, fenceValue);
 
         // Wait until the Signal has been processed.
@@ -360,7 +331,7 @@ public abstract class D3D12Application : Application
             _frameFenceEvent.WaitOne();
 
             // Increment the fence value for the current frame.
-            _fenceValues[_backBufferIndex]++;
+            _fenceValues[BackBufferIndex]++;
         }
     }
 
@@ -369,7 +340,7 @@ public abstract class D3D12Application : Application
 
     }
 
-    private void ResizeSwapchain()
+    private void CreateWindowSizeDependentResources()
     {
         // Wait until all previous GPU work is complete.
         WaitForGpu();
@@ -377,43 +348,108 @@ public abstract class D3D12Application : Application
         // Release resources that are tied to the swap chain and update fence values.
         for (int i = 0; i < MainWindow.BackBufferCount; i++)
         {
-            _renderTargets[i].Dispose();
-            _fenceValues[i] = _fenceValues[_backBufferIndex];
+            if (_renderTargets[i] is not null)
+            {
+                _renderTargets[i].Dispose();
+                RenderTargetViewHeap.ReleaseDescriptor(_renderTargetDescriptorIndexes[i]);
+            }
+
+            _fenceValues[i] = _fenceValues[BackBufferIndex];
         }
 
-        SizeF size = MainWindow.ClientSize;
-        Format backBufferFormat = SwapChain.Description1.Format;
-
-        // If the swap chain already exists, resize it.
-        const int backBufferCount = 2;
-        Result hr = SwapChain.ResizeBuffers(
-            backBufferCount,
-            (int)size.Width,
-            (int)size.Height,
-            backBufferFormat,
-            _isTearingSupported ? SwapChainFlags.AllowTearing : SwapChainFlags.None
-            );
-
-        if (hr == DXGI.ResultCode.DeviceRemoved || hr == DXGI.ResultCode.DeviceReset)
+        DepthStencilTexture?.Dispose();
+        if (_depthStencilViewDescriptorIndex != -1)
         {
-#if DEBUG
-            Result logResult = (hr == DXGI.ResultCode.DeviceRemoved) ? Device.DeviceRemovedReason : hr;
-            Debug.WriteLine($"Device Lost on ResizeBuffers: Reason code {logResult}");
-#endif
-            // If the device was removed for any reason, a new device and swap chain will need to be created.
-            HandleDeviceLost();
+            DepthStencilViewHeap.ReleaseDescriptor(_depthStencilViewDescriptorIndex);
+        }
 
-            // Everything is set up now. Do not continue execution of this method. HandleDeviceLost will reenter this method
-            // and correctly set up the new device.
-            return;
+        if (SwapChain is null)
+        {
+            // Create SwapChain
+            using (IDXGISwapChain1 tempSwapChain = MainWindow.CreateSwapChain(_dxgiFactory, DirectQueue, ColorFormat))
+            {
+                SwapChain = tempSwapChain.QueryInterface<IDXGISwapChain3>();
+            }
         }
         else
         {
-            hr.CheckError();
+            SizeF size = MainWindow.ClientSize;
+            Format backBufferFormat = SwapChain.Description1.Format;
+
+            // If the swap chain already exists, resize it.
+            int backBufferCount = MainWindow.BackBufferCount;
+            Result hr = SwapChain.ResizeBuffers(
+                backBufferCount,
+                (int)size.Width,
+                (int)size.Height,
+                backBufferFormat,
+                _isTearingSupported ? SwapChainFlags.AllowTearing : SwapChainFlags.None
+                );
+
+            if (hr == DXGI.ResultCode.DeviceRemoved || hr == DXGI.ResultCode.DeviceReset)
+            {
+#if DEBUG
+                Result logResult = (hr == DXGI.ResultCode.DeviceRemoved) ? Device.DeviceRemovedReason : hr;
+                Debug.WriteLine($"Device Lost on ResizeBuffers: Reason code {logResult}");
+#endif
+                // If the device was removed for any reason, a new device and swap chain will need to be created.
+                HandleDeviceLost();
+
+                // Everything is set up now. Do not continue execution of this method. HandleDeviceLost will reenter this method
+                // and correctly set up the new device.
+                return;
+            }
+            else
+            {
+                hr.CheckError();
+            }
         }
 
         // Handle color space settings for HDR
         UpdateColorSpace();
+
+        // Create a RTV for each frame.
+        for (int i = 0; i < _renderTargets.Length; i++)
+        {
+            _renderTargets[i] = SwapChain.GetBuffer<ID3D12Resource>(i);
+            _renderTargetDescriptorIndexes[i] = RenderTargetViewHeap.AllocateDescriptor();
+
+            CpuDescriptorHandle rtvHandle = RenderTargetViewHeap.GetCpuHandle(_renderTargetDescriptorIndexes[i]);
+            Device.CreateRenderTargetView(_renderTargets[i], null, rtvHandle);
+        }
+
+        BackBufferIndex = SwapChain.CurrentBackBufferIndex;
+
+        if (_depthStencilFormat != Format.Unknown)
+        {
+            ResourceDescription depthStencilDesc = ResourceDescription.Texture2D(_depthStencilFormat, (uint)MainWindow.ClientSize.Width, (uint)MainWindow.ClientSize.Height, 1, 1);
+            depthStencilDesc.Flags |= ResourceFlags.AllowDepthStencil;
+
+            DepthStencilTexture = Device.CreateCommittedResource(
+                new HeapProperties(HeapType.Default),
+                HeapFlags.None,
+                depthStencilDesc,
+                ResourceStates.DepthWrite,
+                new(_depthStencilFormat, 1.0f, 0)
+                );
+            DepthStencilTexture.Name = "DepthStencil Texture";
+
+            DepthStencilViewDescription dsViewDesc = new()
+            {
+                Format = _depthStencilFormat,
+                ViewDimension = DepthStencilViewDimension.Texture2D
+            };
+
+            _depthStencilViewDescriptorIndex = DepthStencilViewHeap.AllocateDescriptor();
+            CpuDescriptorHandle dsvHandle = DepthStencilViewHeap.GetCpuHandle(_depthStencilViewDescriptorIndex);
+            Device.CreateDepthStencilView(DepthStencilTexture, dsViewDesc, dsvHandle);
+        }
+
+    }
+
+    private void ResizeSwapchain()
+    {
+        CreateWindowSizeDependentResources();
     }
 
     protected override void Draw(AppTime time)
@@ -423,7 +459,7 @@ public abstract class D3D12Application : Application
         CommandList.BeginEvent("Frame");
 
         // Indicate that the back buffer will be used as a render target.
-        CommandList.ResourceBarrierTransition(_renderTargets[_backBufferIndex], ResourceStates.Present, ResourceStates.RenderTarget);
+        CommandList.ResourceBarrierTransition(_renderTargets[BackBufferIndex], ResourceStates.Present, ResourceStates.RenderTarget);
 
         if (!UseRenderPass)
         {
@@ -443,7 +479,7 @@ public abstract class D3D12Application : Application
         base.Draw(time);
 
         // Indicate that the back buffer will now be used to present.
-        CommandList.ResourceBarrierTransition(_renderTargets[_backBufferIndex], ResourceStates.RenderTarget, ResourceStates.Present);
+        CommandList.ResourceBarrierTransition(_renderTargets[BackBufferIndex], ResourceStates.RenderTarget, ResourceStates.Present);
         CommandList.EndEvent();
         CommandList.Close();
 
@@ -507,21 +543,21 @@ public abstract class D3D12Application : Application
     private void MoveToNextFrame()
     {
         // Schedule a Signal command in the queue.
-        ulong currentFenceValue = _fenceValues[_backBufferIndex];
+        ulong currentFenceValue = _fenceValues[BackBufferIndex];
         DirectQueue.Signal(_frameFence, currentFenceValue);
 
         // Update the back buffer index.
-        _backBufferIndex = SwapChain.CurrentBackBufferIndex;
+        BackBufferIndex = SwapChain.CurrentBackBufferIndex;
 
         // If the next frame is not ready to be rendered yet, wait until it is ready.
-        if (_frameFence.CompletedValue < _fenceValues[_backBufferIndex])
+        if (_frameFence.CompletedValue < _fenceValues[BackBufferIndex])
         {
-            _frameFence.SetEventOnCompletion(_fenceValues[_backBufferIndex], _frameFenceEvent).CheckError();
+            _frameFence.SetEventOnCompletion(_fenceValues[BackBufferIndex], _frameFenceEvent).CheckError();
             _frameFenceEvent.WaitOne();
         }
 
         // Set the fence value for the next frame.
-        _fenceValues[_backBufferIndex] = currentFenceValue + 1;
+        _fenceValues[BackBufferIndex] = currentFenceValue + 1;
     }
 
     private void UpdateColorSpace()
@@ -533,7 +569,90 @@ public abstract class D3D12Application : Application
             _dxgiFactory = CreateDXGIFactory2<IDXGIFactory4>(_dxgiDebug);
         }
 
-        // TODO:
+        ColorSpace = ColorSpaceType.RgbFullG22NoneP709;
+        if (SwapChain is null)
+            return;
+
+        bool isDisplayHDR10 = false;
+
+        // To detect HDR support, we will need to check the color space in the primary
+        // DXGI output associated with the app at this point in time
+        // (using window/display intersection).
+
+        // Get the retangle bounds of the app window.
+        Rectangle windowBounds = MainWindow.Bounds;
+        if (windowBounds.IsEmpty)
+            return;
+
+        IDXGIOutput? bestOutput = default;
+        int bestIntersectArea = -1;
+
+        for (int adapterIndex = 0;
+            _dxgiFactory.EnumAdapters1(adapterIndex, out IDXGIAdapter1? adapter).Success;
+            adapterIndex++)
+        {
+            for (int outputIndex = 0;
+                adapter.EnumOutputs(outputIndex, out IDXGIOutput? output).Success;
+                outputIndex++)
+            {
+                // Get the rectangle bounds of current output.
+                OutputDescription outputDesc = output.Description;
+                RawRect r = outputDesc.DesktopCoordinates;
+
+                // Compute the intersection
+                int intersectArea = ComputeIntersectionArea(in windowBounds, in r);
+                if (intersectArea > bestIntersectArea)
+                {
+                    bestOutput = output;
+                    bestIntersectArea = intersectArea;
+                }
+                else
+                {
+                    output?.Dispose();
+                }
+            }
+        }
+
+        if (bestOutput is not null)
+        {
+            using IDXGIOutput6? output6 = bestOutput.QueryInterfaceOrNull<IDXGIOutput6>();
+            if (output6 != null)
+            {
+                OutputDescription1 outputDesc = output6.Description1;
+
+                if (outputDesc.ColorSpace == ColorSpaceType.RgbFullG2084NoneP2020)
+                {
+                    // Display output is HDR10.
+                    isDisplayHDR10 = true;
+                }
+            }
+        }
+
+        if (isDisplayHDR10)
+        {
+            switch (ColorFormat)
+            {
+                case Format.R10G10B10A2_UNorm:
+                    // The application creates the HDR10 signal.
+                    ColorSpace = ColorSpaceType.RgbFullG2084NoneP2020;
+                    break;
+
+                case Format.R16G16B16A16_Float:
+                    // The system creates the HDR10 signal; application uses linear values.
+                    ColorSpace = ColorSpaceType.RgbFullG10NoneP709;
+                    break;
+
+                default:
+                    ColorSpace = ColorSpaceType.RgbFullG22NoneP709;
+                    break;
+            }
+        }
+
+        SwapChainColorSpaceSupportFlags colorSpaceSupport = SwapChain.CheckColorSpaceSupport(ColorSpace);
+        if ((colorSpaceSupport & SwapChainColorSpaceSupportFlags.Present) != SwapChainColorSpaceSupportFlags.None)
+        {
+            SwapChain.SetColorSpace1(ColorSpace);
+        }
     }
 
     protected unsafe ID3D12Resource CreateStaticBuffer<T>(T[] data, ResourceStates afterState)
@@ -649,6 +768,11 @@ public abstract class D3D12Application : Application
 
             return results.GetObjectBytecodeMemory();
         }
+    }
+
+    private static int ComputeIntersectionArea(in Rectangle rect1, in RawRect rect2)
+    {
+        return Math.Max(0, Math.Min(rect1.Right, rect2.Right) - Math.Max(rect1.Left, rect2.Left)) * Math.Max(0, Math.Min(rect1.Bottom, rect2.Bottom) - Math.Max(rect1.Top, rect2.Top));
     }
 
     private class ShaderIncludeHandler : CallbackBase, IDxcIncludeHandler
