@@ -109,8 +109,17 @@ public abstract class D3D11Application : Application
 
     public bool DiscardViews { get; set; } = true;
 
-    protected override void OnShutdown()
+    protected virtual void OnDestroy()
     {
+
+    }
+
+    protected sealed override void OnShutdown()
+    {
+        DeviceContext.Flush();
+
+        OnDestroy();
+
         ColorTexture.Dispose();
         ColorTextureView.Dispose();
         DepthStencilTexture?.Dispose();
@@ -297,6 +306,8 @@ public abstract class D3D11Application : Application
                     output?.Dispose();
                 }
             }
+
+            adapter.Dispose();
         }
 
         if (bestOutput is not null)
@@ -312,6 +323,8 @@ public abstract class D3D11Application : Application
                     isDisplayHDR10 = true;
                 }
             }
+
+            bestOutput.Dispose();
         }
 
         if (isDisplayHDR10)

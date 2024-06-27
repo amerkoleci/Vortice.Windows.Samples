@@ -26,8 +26,8 @@ unsafe class DrawCubeApp : D3D12Application
         MeshData mesh = MeshUtilities.CreateCube(5.0f);
 
         UploadBatch.Begin(CommandListType.Direct);
-        _vertexBuffer = CreateStaticBuffer(mesh.Vertices, ResourceStates.VertexAndConstantBuffer);
-        _indexBuffer = CreateStaticBuffer(mesh.Indices, ResourceStates.IndexBuffer);
+        _vertexBuffer = D3D12ResourceUtils.CreateStaticBuffer(Device, UploadBatch, mesh.Vertices, ResourceStates.VertexAndConstantBuffer);
+        _indexBuffer = D3D12ResourceUtils.CreateStaticBuffer(Device, UploadBatch, mesh.Indices, ResourceStates.IndexBuffer);
         UploadBatch.End(DirectQueue);
 
         uint constantBufferSize = MathHelper.AlignUp((uint)sizeof(Matrix4x4), 256u); // D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT

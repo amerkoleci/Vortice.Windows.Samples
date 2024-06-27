@@ -41,7 +41,7 @@ public class CubeAlphaBlendApp : D3D11Application
         _blendState = Device.CreateBlendState(BlendDescription.NonPremultiplied);
     }
 
-    protected override void OnShutdown()
+    protected override void OnDestroy()
     {
         _vertexBuffer.Dispose();
         _indexBuffer.Dispose();
@@ -52,8 +52,6 @@ public class CubeAlphaBlendApp : D3D11Application
         _rasterizerState.Dispose();
         _depthStencilState.Dispose();
         _blendState.Dispose();
-
-        base.OnShutdown();
     }
 
     protected unsafe override void OnRender()

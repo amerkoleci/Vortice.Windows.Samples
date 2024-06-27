@@ -52,7 +52,7 @@ public sealed class MipmappingApp : D3D11Application
         _mipLevelslock = Stopwatch.StartNew();
     }
 
-    protected override void OnShutdown()
+    protected override void OnDestroy()
     {
         _vertexBuffer.Dispose();
         _indexBuffer.Dispose();
@@ -64,8 +64,6 @@ public sealed class MipmappingApp : D3D11Application
         _vertexShader.Dispose();
         _pixelShader.Dispose();
         _inputLayout.Dispose();
-
-        base.OnShutdown();
     }
 
     protected unsafe override void OnRender()

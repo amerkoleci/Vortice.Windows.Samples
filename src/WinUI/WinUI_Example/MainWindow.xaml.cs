@@ -118,7 +118,7 @@ namespace WinUI_Example
                 DrawText("Hello Text!", _texture);
             }
 
-            protected override void OnShutdown()
+            protected override void OnDestroy()
             {
                 _vertexBuffer.Dispose();
                 _indexBuffer.Dispose();
@@ -133,8 +133,6 @@ namespace WinUI_Example
                 _brush?.Dispose();
                 _direct2dFactory.Dispose();
                 _directWriteFactory.Dispose();
-
-                base.OnShutdown();
             }
 
             protected override void OnRender()

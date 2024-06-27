@@ -27,12 +27,11 @@ internal class DrawQuadApp : D3D12Application
             new VertexPositionColor(new Vector3(0.5f, -0.5f, 0.0f), new Color4(0.0f, 0.0f, 1.0f, 1.0f)),
             new VertexPositionColor(new Vector3(-0.5f, -0.5f, 0.0f), new Color4(0.0f, 0.0f, 1.0f, 1.0f))
         ];
+        Span<ushort> quadIndices = [0, 1, 2, 0, 2, 3];
 
         UploadBatch.Begin(CommandListType.Direct);
-        _vertexBuffer = CreateStaticBuffer(quadVertices, ResourceStates.VertexAndConstantBuffer);
-
-        Span<ushort> quadIndices = [0, 1, 2, 0, 2, 3];
-        _indexBuffer = CreateStaticBuffer(quadIndices, ResourceStates.IndexBuffer);
+        _vertexBuffer = D3D12ResourceUtils.CreateStaticBuffer(Device, UploadBatch, quadVertices, ResourceStates.VertexAndConstantBuffer);
+        _indexBuffer = D3D12ResourceUtils.CreateStaticBuffer(Device, UploadBatch, quadIndices, ResourceStates.IndexBuffer);
         UploadBatch.End(DirectQueue);
 
         // Create empty root signature first

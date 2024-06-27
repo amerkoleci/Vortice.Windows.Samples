@@ -37,7 +37,7 @@ unsafe class DrawConstBuffersApp : D3D12Application
         ];
 
         UploadBatch.Begin(CommandListType.Direct);
-        _vertexBuffer = CreateStaticBuffer(triangleVertices, ResourceStates.VertexAndConstantBuffer);
+        _vertexBuffer = D3D12ResourceUtils.CreateStaticBuffer(Device, UploadBatch, triangleVertices, ResourceStates.VertexAndConstantBuffer);
         UploadBatch.End(DirectQueue);
 
         int constantBufferSize = sizeof(SceneConstantBuffer);

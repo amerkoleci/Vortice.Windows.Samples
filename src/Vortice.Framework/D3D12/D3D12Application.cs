@@ -1,20 +1,19 @@
 // Copyright (c) Amer Koleci and contributors.
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
-using Vortice.DXGI;
+using System.Diagnostics;
+using System.Drawing;
+using System.Runtime.InteropServices;
+using SharpGen.Runtime;
 using Vortice.Direct3D;
 using Vortice.Direct3D12;
+using Vortice.Direct3D12.Debug;
+using Vortice.Dxc;
+using Vortice.DXGI;
+using Vortice.DXGI.Debug;
+using Vortice.Mathematics;
 using static Vortice.Direct3D12.D3D12;
 using static Vortice.DXGI.DXGI;
-using static Vortice.Framework.Utilities;
-using Vortice.Direct3D12.Debug;
-using System.Diagnostics;
-using Vortice.DXGI.Debug;
-using SharpGen.Runtime;
-using Vortice.Mathematics;
-using Vortice.Dxc;
-using System.Runtime.InteropServices;
-using System.Drawing;
 
 namespace Vortice.Framework;
 
@@ -23,10 +22,6 @@ namespace Vortice.Framework;
 /// </summary>
 public abstract class D3D12Application : Application
 {
-    private const ResourceStates c_initialCopyTargetState = ResourceStates.Common;
-    private const ResourceStates c_initialReadTargetState = ResourceStates.Common;
-    private const ResourceStates c_initialUAVTargetState = ResourceStates.Common;
-
     private readonly Format _colorFormat;
     private readonly Format _depthStencilFormat;
     private readonly FeatureLevel _minFeatureLevel;
@@ -198,6 +193,8 @@ public abstract class D3D12Application : Application
 
         RenderTargetViewHeap = new(Device, DescriptorHeapType.RenderTargetView, renderTargetViewHeapSize);
         DepthStencilViewHeap = new(Device, DescriptorHeapType.DepthStencilView, depthStencilViewHeapSize);
+        ShaderResourceViewHeap = new(Device, DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, shaderResourceViewHeapSize);
+        SamplerHeap = new(Device, DescriptorHeapType.Sampler, samplerHeapSize);
 
         // Create synchronization objects.
         _fenceValues = new ulong[MainWindow.BackBufferCount];
@@ -231,6 +228,8 @@ public abstract class D3D12Application : Application
 
     public D3D12DescriptorAllocator RenderTargetViewHeap { get; }
     public D3D12DescriptorAllocator DepthStencilViewHeap { get; }
+    public D3D12DescriptorAllocator ShaderResourceViewHeap { get; }
+    public D3D12DescriptorAllocator SamplerHeap { get; }
 
     public IDXGISwapChain3 SwapChain { get; private set; }
     public int BackBufferIndex { get; private set; }
@@ -277,6 +276,8 @@ public abstract class D3D12Application : Application
 
         RenderTargetViewHeap.Dispose();
         DepthStencilViewHeap.Dispose();
+        ShaderResourceViewHeap.Dispose();
+        SamplerHeap.Dispose();
 
         for (int i = 0; i < _commandAllocators.Length; i++)
         {
@@ -456,6 +457,14 @@ public abstract class D3D12Application : Application
     {
         CommandAllocator.Reset();
         CommandList.Reset(CommandAllocator);
+
+        ReadOnlySpan<ID3D12DescriptorHeap> heaps =
+        [
+            ShaderResourceViewHeap.ShaderVisibleHeap!,
+            SamplerHeap.ShaderVisibleHeap!
+        ];
+        CommandList.SetDescriptorHeaps(2, heaps);
+
         CommandList.BeginEvent("Frame");
 
         // Indicate that the back buffer will be used as a render target.
@@ -611,6 +620,8 @@ public abstract class D3D12Application : Application
                     output?.Dispose();
                 }
             }
+
+            adapter.Dispose();
         }
 
         if (bestOutput is not null)
@@ -626,6 +637,8 @@ public abstract class D3D12Application : Application
                     isDisplayHDR10 = true;
                 }
             }
+
+            bestOutput.Dispose();
         }
 
         if (isDisplayHDR10)
@@ -652,87 +665,6 @@ public abstract class D3D12Application : Application
         if ((colorSpaceSupport & SwapChainColorSpaceSupportFlags.Present) != SwapChainColorSpaceSupportFlags.None)
         {
             SwapChain.SetColorSpace1(ColorSpace);
-        }
-    }
-
-    protected unsafe ID3D12Resource CreateStaticBuffer<T>(T[] data, ResourceStates afterState)
-        where T : unmanaged
-    {
-        Span<T> span = data;
-        return CreateStaticBuffer(span, afterState);
-    }
-
-    protected unsafe ID3D12Resource CreateStaticBuffer<T>(Span<T> data, ResourceStates afterState)
-        where T : unmanaged
-    {
-        ulong sizeInBytes = (ulong)(sizeof(T) * data.Length);
-
-        ulong c_maxBytes = /*D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_A_TERM*/128u * 1024u * 1024u;
-
-        if (sizeInBytes > c_maxBytes)
-        {
-            throw new InvalidOperationException($"ERROR: Resource size too large for DirectX 12 (size {sizeInBytes})");
-        }
-
-        ID3D12Resource buffer = Device.CreateCommittedResource(
-            HeapType.Default,
-            HeapFlags.None,
-            ResourceDescription.Buffer(sizeInBytes),
-            c_initialCopyTargetState
-        );
-
-        fixed (T* dataPtr = data)
-        {
-            SubresourceData initData = new()
-            {
-                Data = (nint)dataPtr,
-            };
-
-            UploadBatch.Upload(buffer, 0, &initData, 1);
-
-            UploadBatch.Transition(buffer, ResourceStates.CopyDest, afterState);
-
-            return buffer;
-        }
-    }
-
-    protected unsafe ID3D12Resource CreateTexture2D<T>(
-        int width, int height, Format format,
-        Span<T> data,
-        ResourceStates afterState = ResourceStates.PixelShaderResource,
-        ResourceFlags flags = ResourceFlags.None)
-        where T : unmanaged
-    {
-        bool generateMips = false;
-        ushort mipLevels = 1;
-
-        ID3D12Resource texture = Device.CreateCommittedResource(
-            HeapType.Default,
-            HeapFlags.None,
-            ResourceDescription.Texture2D(format, (uint)width, (uint)height, 1, mipLevels, 1, 0, flags),
-            c_initialCopyTargetState
-        );
-
-        fixed (T* dataPtr = data)
-        {
-            FormatHelper.GetSurfaceInfo(format, width, height, out int rowPitch, out int slicePitch);
-            SubresourceData initData = new()
-            {
-                Data = (nint)dataPtr,
-                RowPitch = rowPitch,
-                SlicePitch = slicePitch
-            };
-
-            UploadBatch.Upload(texture, 0, &initData, 1);
-
-            UploadBatch.Transition(texture, ResourceStates.CopyDest, afterState);
-
-            if (generateMips)
-            {
-                //UploadBatch.GenerateMips(texture);
-            }
-
-            return texture;
         }
     }
 

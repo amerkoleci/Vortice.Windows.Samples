@@ -66,7 +66,7 @@ static class Program
             mediaEngineEx.Play();
         }
 
-        protected override void OnShutdown() 
+        protected override void OnDestroy() 
         {
             _colorTextureSurface.Dispose();
             _dxgiDeviceManager.Dispose();

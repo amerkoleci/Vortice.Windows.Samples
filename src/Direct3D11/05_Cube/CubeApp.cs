@@ -36,7 +36,7 @@ public class CubeApp : D3D11Application
         _inputLayout = Device.CreateInputLayout(VertexPositionNormalTexture.InputElements, vertexShaderByteCode.Span);
     }
 
-    protected override void OnShutdown()
+    protected override void OnDestroy()
     {
         _vertexBuffer.Dispose();
         _indexBuffer.Dispose();
@@ -44,8 +44,6 @@ public class CubeApp : D3D11Application
         _vertexShader.Dispose();
         _pixelShader.Dispose();
         _inputLayout.Dispose();
-
-        base.OnShutdown();
     }
 
     protected unsafe override void OnRender()

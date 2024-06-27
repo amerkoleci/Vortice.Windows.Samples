@@ -4,7 +4,6 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using Vortice.Direct3D;
 using Vortice.Direct3D12;
 using Vortice.Dxc;
 using Vortice.DXGI;
@@ -15,15 +14,13 @@ using Vortice.Mathematics;
 
 unsafe class DrawTexturedCubeApp : D3D12Application
 {
-    private const int TextureWidth = 256;
-    private const int TextureHeight = 256;
-    private const int TexturePixelSize = 4;
-
     private ID3D12Resource _vertexBuffer;
     private ID3D12Resource _indexBuffer;
     private ID3D12Resource _constantBuffer;
     private void* _cbvData = default;
     private ID3D12Resource _texture;
+    private int _srvRootParameterIndex = -1;
+    private int _descriptorTableSRVBaseIndex;
     private ID3D12RootSignature _rootSignature;
     private ID3D12PipelineState _pipelineState;
 
@@ -32,10 +29,20 @@ unsafe class DrawTexturedCubeApp : D3D12Application
         MeshData mesh = MeshUtilities.CreateCube(5.0f);
 
         UploadBatch.Begin(CommandListType.Direct);
-        _vertexBuffer = CreateStaticBuffer(mesh.Vertices, ResourceStates.VertexAndConstantBuffer);
-        _indexBuffer = CreateStaticBuffer(mesh.Indices, ResourceStates.IndexBuffer);
-        //CreateTexture();
+        _vertexBuffer = D3D12ResourceUtils.CreateStaticBuffer(Device, UploadBatch, mesh.Vertices, ResourceStates.VertexAndConstantBuffer);
+        _indexBuffer = D3D12ResourceUtils.CreateStaticBuffer(Device, UploadBatch, mesh.Indices, ResourceStates.IndexBuffer);
+        CreateTexture();
         UploadBatch.End(DirectQueue);
+
+        // Describe and create a SRV for the texture.
+        _descriptorTableSRVBaseIndex = ShaderResourceViewHeap.AllocateDescriptor();
+        ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
+        srvDesc.Shader4ComponentMapping = ShaderComponentMapping.Default;
+        srvDesc.Format = Format.R8G8B8A8_UNorm;
+        srvDesc.ViewDimension = ShaderResourceViewDimension.Texture2D;
+        srvDesc.Texture2D.MipLevels = 1;
+        Device.CreateShaderResourceView(_texture, srvDesc, ShaderResourceViewHeap.GetCpuHandle(_descriptorTableSRVBaseIndex));
+        ShaderResourceViewHeap.CopyToShaderVisibleHeap(_descriptorTableSRVBaseIndex, 1);
 
         uint constantBufferSize = MathHelper.AlignUp((uint)sizeof(Matrix4x4), 256u); // D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT
         _constantBuffer = Device.CreateCommittedResource(
@@ -58,6 +65,7 @@ unsafe class DrawTexturedCubeApp : D3D12Application
         RootDescriptor1 rootDescriptor1 = new(0, 0, RootDescriptorFlags.DataStaticWhileSetAtExecute);
         DescriptorRange1 srvRange = new(DescriptorRangeType.ShaderResourceView, 1, 0, flags: DescriptorRangeFlags.DataStatic);
 
+        _srvRootParameterIndex = 1;
         _rootSignature = Device.CreateRootSignature(new RootSignatureDescription1(rootSignatureFlags,
             [
             new RootParameter1(RootParameterType.ConstantBufferView, rootDescriptor1, ShaderVisibility.Vertex),
@@ -110,7 +118,8 @@ unsafe class DrawTexturedCubeApp : D3D12Application
             0xFFFFFFFF,
         ];
 
-        _texture = CreateTexture2D(TextureWidth, TextureHeight, Format.R8G8B8A8_UNorm, pixels);
+        _texture = D3D12ResourceUtils.CreateTexture2D(Device, UploadBatch, 4, 4,
+            Format.R8G8B8A8_UNorm, pixels);
     }
 
     protected override void OnDestroy()
@@ -145,9 +154,12 @@ unsafe class DrawTexturedCubeApp : D3D12Application
 
         // Set necessary state.
         CommandList.SetPipelineState(_pipelineState);
+        CommandList.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
         CommandList.SetGraphicsRootSignature(_rootSignature);
         CommandList.SetGraphicsRootConstantBufferView(0, _constantBuffer.GPUVirtualAddress);
-        CommandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+
+        GpuDescriptorHandle gpuHadle = ShaderResourceViewHeap.GetGpuHandle(_descriptorTableSRVBaseIndex);
+        CommandList.SetGraphicsRootDescriptorTable(_srvRootParameterIndex, gpuHadle);
 
         // Vertex Buffer
         int stride = VertexPositionNormalTexture.SizeInBytes;

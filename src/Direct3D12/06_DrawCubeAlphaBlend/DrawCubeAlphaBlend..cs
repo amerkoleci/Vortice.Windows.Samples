@@ -202,8 +202,8 @@ unsafe class DrawCubeAlphaBlend : D3D12Application
             vbase += 4;
         }
 
-        ID3D12Resource vertexBuffer = CreateStaticBuffer(vertices.ToArray(), ResourceStates.VertexAndConstantBuffer);
-        ID3D12Resource indexBuffer = CreateStaticBuffer(indices.ToArray(), ResourceStates.IndexBuffer);
+        ID3D12Resource vertexBuffer = D3D12ResourceUtils.CreateStaticBuffer(Device, UploadBatch, vertices.ToArray(), ResourceStates.VertexAndConstantBuffer);
+        ID3D12Resource indexBuffer = D3D12ResourceUtils.CreateStaticBuffer(Device, UploadBatch, indices.ToArray(), ResourceStates.IndexBuffer);
 
         return (vertexBuffer, indexBuffer);
     }

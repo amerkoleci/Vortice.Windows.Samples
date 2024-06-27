@@ -94,7 +94,7 @@ internal class DrawTextApp : D3D11Application
         DrawText("Hello Text!", _texture);
     }
 
-    protected override void OnShutdown()
+    protected override void OnDestroy()
     {
         _vertexBuffer.Dispose();
         _indexBuffer.Dispose();
@@ -109,8 +109,6 @@ internal class DrawTextApp : D3D11Application
         _brush?.Dispose();
         _direct2dFactory.Dispose();
         _directWriteFactory.Dispose();
-
-        base.OnShutdown();
     }
 
     protected override void OnRender()

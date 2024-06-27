@@ -3,7 +3,6 @@
 
 #nullable disable
 
-using System.Diagnostics;
 using System.Numerics;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
@@ -63,7 +62,7 @@ public unsafe class TexturedCubeApp : D3D11Application
         _inputLayout = Device.CreateInputLayout(VertexPositionNormalTexture.InputElements, vertexShaderByteCode.Span);
     }
 
-    protected override void OnShutdown()
+    protected override void OnDestroy()
     {
         _vertexBuffer.Dispose();
         _indexBuffer.Dispose();
@@ -74,8 +73,6 @@ public unsafe class TexturedCubeApp : D3D11Application
         _vertexShader.Dispose();
         _pixelShader.Dispose();
         _inputLayout.Dispose();
-
-        base.OnShutdown();
     }
 
     protected override void OnKeyboardEvent(KeyboardKey key, bool pressed)
