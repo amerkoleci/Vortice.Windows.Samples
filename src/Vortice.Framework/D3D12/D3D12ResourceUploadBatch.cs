@@ -161,7 +161,7 @@ public sealed class D3D12ResourceUploadBatch
 
     // Asynchronously generate mips from a resource.
     // Resource must be in the PIXEL_SHADER_RESOURCE state
-    public void GenerateMips( ID3D12Resource resource)
+    public void GenerateMips(ID3D12Resource resource)
     {
         // TODO
     }

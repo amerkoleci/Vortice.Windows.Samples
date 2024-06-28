@@ -36,7 +36,7 @@ public class TexturedCubeFromFileApp : D3D11Application
 
         string assetsPath = Path.Combine(AppContext.BaseDirectory, "Textures");
         string textureFile = Path.Combine(assetsPath, "10points.png");
-        (_texture, _textureSRV) = LoadTexture(textureFile, 1);
+        (_texture, _textureSRV) = LoadTexture(textureFile, 0);
         _textureSampler = Device.CreateSamplerState(SamplerDescription.PointWrap);
 
         ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode("Cube.hlsl", "VSMain", "vs_4_0");

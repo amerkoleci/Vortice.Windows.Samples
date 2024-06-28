@@ -173,7 +173,7 @@ public static unsafe class D3D12ResourceUtils
             generateMips = resourceUpload.IsSupportedForGenerateMips(format);
             if (generateMips)
             {
-                mipLevels = (ushort)CountMips((uint)width, (uint)height);
+                mipLevels = (ushort)Utilities.CountMips((uint)width, (uint)height);
             }
         }
 
@@ -205,21 +205,5 @@ public static unsafe class D3D12ResourceUtils
 
             return texture;
         }
-    }
-
-    public static uint CountMips(uint width, uint height)
-    {
-        if (width == 0 || height == 0)
-            return 0;
-
-        uint count = 1;
-        while (width > 1 || height > 1)
-        {
-            width >>= 1;
-            height >>= 1;
-            count++;
-        }
-
-        return count;
     }
 }

@@ -42,7 +42,8 @@
     <PackageReference Include="Vortice.D3DCompiler" />
     <PackageReference Include="Vortice.Dxc" />
     <PackageReference Include="Vortice.Direct2D1" />
-
+    <PackageReference Include="SkiaSharp" />
+    
     <PackageReference Include="Microsoft.Windows.CsWin32" PrivateAssets="all" />
   </ItemGroup>
 

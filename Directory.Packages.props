@@ -21,7 +21,8 @@
     <PackageVersion Include="Vortice.D3DCompiler" Version="$(VorticeWindowsVersion)" />
     <PackageVersion Include="Vortice.Dxc" Version="$(VorticeWindowsVersion)" />
     <PackageVersion Include="Vortice.WinUI" Version="$(VorticeWindowsVersion)" />
-    
+
+    <PackageVersion Include="SkiaSharp" Version="3.0.0-preview.3.1" />
   </ItemGroup>
 
 </Project>

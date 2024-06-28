@@ -2,6 +2,8 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using SkiaSharp;
 using Vortice.DXGI;
 using Vortice.Mathematics;
 using Vortice.WIC;
@@ -12,13 +14,19 @@ public sealed class Image
 {
     private static readonly Lazy<IWICImagingFactory> s_imagingFactory = new(() => new IWICImagingFactory());
 
-    private Image(int width, int height, Format format, Memory<byte> data)
+    private Image(int width, int height, Format format, Span<byte> data)
     {
         Width = width;
         Height = height;
         Format = format;
-        Data = data;
+        Data = data.ToArray();
         BytesPerPixel = format.GetBitsPerPixel() / 8;
+    }
+
+    public static Image Create<T>(int width, int height, Format format, Span<T> data)
+        where T : unmanaged
+    {
+        return new(width, height, format, MemoryMarshal.Cast<T, byte>(data));
     }
 
     public int Width { get; }
@@ -32,10 +40,89 @@ public sealed class Image
     public static Image? FromFile(string filePath, int width = 0, int height = 0)
     {
         using FileStream stream = new(filePath, FileMode.Open);
-        return FromStream(stream, width, height);
+        return FromStreamSkia(stream, width, height);
     }
 
-    public static unsafe Image? FromStream(Stream stream, int width = 0, int height = 0)
+    public static Image[]? FromFileMipMaps(string filePath)
+    {
+        using FileStream stream = new(filePath, FileMode.Open);
+        return FromStreamSkiaMipMaps(stream);
+    }
+
+    #region Skia
+    private static unsafe Image? FromStreamSkia(Stream stream, int width = 0, int height = 0)
+    {
+        using SKBitmap bitmap = SKBitmap.Decode(stream);
+        if (width != 0 && height != 0)
+        {
+            using SKBitmap newBitmap = bitmap.Resize(new SKSizeI(width, height), SKSamplingOptions.Default);
+            return FromSkia(newBitmap);
+        }
+
+        return FromSkia(bitmap);
+    }
+
+    private static unsafe Image[]? FromStreamSkiaMipMaps(Stream stream)
+    {
+        using SKBitmap bitmap = SKBitmap.Decode(stream);
+        uint mipLevels = Utilities.CountMips((uint)bitmap.Width, (uint)bitmap.Height);
+        Image[] result = new Image[mipLevels];
+
+        uint mipWidth = (uint)bitmap.Width;
+        uint mipHeight = (uint)bitmap.Height;
+
+        for (uint level = 0; level < mipLevels; ++level)
+        {
+            if (mipWidth == bitmap.Width && mipHeight == bitmap.Height)
+            {
+                result[level] = FromSkia(bitmap)!;
+            }
+            else
+            {
+                SKSamplingOptions samplingOptions = new SKSamplingOptions(SKCubicResampler.CatmullRom);
+                using SKBitmap newBitmap = bitmap.Resize(new SKSizeI((int)mipWidth, (int)mipHeight), samplingOptions);
+                result[level] = FromSkia(newBitmap);
+            }
+
+            if (mipHeight > 1)
+                mipHeight >>= 1;
+
+            if (mipWidth > 1)
+                mipWidth >>= 1;
+        }
+
+        return result;
+    }
+
+
+    private static unsafe Image? FromSkia(SKBitmap bitmap)
+    {
+        Format format = Format.R8G8B8A8_UNorm;
+        if (bitmap.ColorType == SKColorType.Rgba8888)
+        {
+            return Create(bitmap.Width, bitmap.Height, format, bitmap.GetPixelSpan());
+        }
+
+        Span<Color> pixels = SKColorToColor(bitmap.Pixels);
+        return Create(bitmap.Width, bitmap.Height, format, pixels);
+    }
+
+    private static Span<Color> SKColorToColor(Span<SKColor> pixels)
+    {
+        // ARGB --> ABGR
+        foreach (ref uint pixel in MemoryMarshal.Cast<SKColor, uint>(pixels))
+        {
+            pixel = ((pixel >> 16) & 0x000000FF) |
+                    ((pixel << 16) & 0x00FF0000) |
+                    (pixel & 0xFF00FF00);
+        }
+
+        return MemoryMarshal.Cast<SKColor, Color>(pixels);
+    }
+    #endregion
+
+    #region WIC
+    private static unsafe Image? FromStreamWIC(Stream stream, int width = 0, int height = 0)
     {
         using IWICBitmapDecoder decoder = ImagingFactory().CreateDecoderFromStream(stream);
         using IWICBitmapFrameDecode frame = decoder.GetFrame(0);
@@ -250,4 +337,5 @@ public sealed class Image
 
         // We don't support n-channel formats
     };
+    #endregion
 }

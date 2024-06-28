@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using SharpGen.Runtime;
 using Vortice.D3DCompiler;
 using Vortice.Direct3D;
@@ -458,30 +459,60 @@ public abstract class D3D11Application : Application
 
     protected unsafe (ID3D11Texture2D, ID3D11ShaderResourceView) LoadTexture(string filePath, int mipLevels = 0)
     {
-        Image image = Image.FromFile(filePath)!;
+        bool onGpu = true;
 
         ID3D11Texture2D texture;
         if (mipLevels == 0)
         {
-            texture = Device.CreateTexture2D(image.Format, image.Width, image.Height,
-               mipLevels: 0,
-               bindFlags: BindFlags.ShaderResource | BindFlags.RenderTarget,
-               miscFlags: ResourceOptionFlags.GenerateMips);
-
-            fixed (byte* pData = image.Data.Span)
+            if (onGpu)
             {
-                DeviceContext.UpdateSubresource(texture, 0, null, (IntPtr)pData, image.RowPitch, 0);
+                Image image = Image.FromFile(filePath)!;
+
+                texture = Device.CreateTexture2D(image.Format, image.Width, image.Height,
+                   mipLevels: 0,
+                   bindFlags: BindFlags.ShaderResource | BindFlags.RenderTarget,
+                   miscFlags: ResourceOptionFlags.GenerateMips);
+
+                fixed (byte* pData = image.Data.Span)
+                {
+                    DeviceContext.UpdateSubresource(texture, 0, null, (IntPtr)pData, image.RowPitch, 0);
+                }
+            }
+            else
+            {
+                // Use Skia to generate mips
+                Image[] images = Image.FromFileMipMaps(filePath)!;
+
+                mipLevels = images.Length;
+                SubresourceData[] subresources = new SubresourceData[mipLevels];
+                for (int i = 0; i < mipLevels; i++)
+                {
+                    FormatHelper.GetSurfaceInfo(images[i].Format, images[i].Width, images[i].Height, out int rowPitch, out int slicePitch);
+
+                    fixed (byte* dataPointer = images[i].Data.Span)
+                    {
+                        subresources[i] = new SubresourceData(dataPointer, images[i].RowPitch, slicePitch);
+                    }
+                }
+
+                texture = Device.CreateTexture2D(new Texture2DDescription(
+                    images[0].Format, images[0].Width, images[0].Height,
+                    mipLevels: mipLevels,
+                    bindFlags: BindFlags.ShaderResource
+                    ),  subresources);
             }
         }
         else
         {
+            Image image = Image.FromFile(filePath)!;
+
             texture = Device.CreateTexture2D(image.Data.Span, image.Format, image.Width, image.Height, mipLevels: 1);
         }
 
-        ShaderResourceViewDescription srvDesc = new(texture, ShaderResourceViewDimension.Texture2D, image.Format);
+        ShaderResourceViewDescription srvDesc = new(texture, ShaderResourceViewDimension.Texture2D, texture.Description.Format);
         ID3D11ShaderResourceView srv = Device.CreateShaderResourceView(texture);
 
-        if (mipLevels == 0)
+        if (mipLevels == 0 && onGpu)
         {
             DeviceContext.GenerateMips(srv);
         }
