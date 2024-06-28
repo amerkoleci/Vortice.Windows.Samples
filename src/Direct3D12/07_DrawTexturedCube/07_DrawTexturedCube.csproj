@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Content Include="Shaders\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Textures\**" CopyToOutputDirectory="PreserveNewest" />
     
     <ProjectReference Include="..\..\Vortice.Framework\Vortice.Framework.csproj" />
     

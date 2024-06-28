@@ -24,7 +24,7 @@ PSInput VSMain(in VSInput input)
     PSInput result;
     result.Position = mul(worldViewProjection, float4(input.Position, 1.0f));
     result.Normal = input.Normal;
-    result.Texcoord = input.Texcoord * 5.0f;
+    result.Texcoord = input.Texcoord;
     return result;
 }
 

@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Vortice.Direct3D12;
 using Vortice.Dxc;
 using Vortice.DXGI;
@@ -79,7 +80,7 @@ unsafe class DrawTexturedCubeApp : D3D12Application
         // Create pipeline
         ReadOnlyMemory<byte> vertexShaderByteCode = CompileBytecode(DxcShaderStage.Vertex, "TexturedCube.hlsl", "VSMain");
         ReadOnlyMemory<byte> pixelShaderByteCode = CompileBytecode(DxcShaderStage.Pixel, "TexturedCube.hlsl", "PSMain");
-
+        
         GraphicsPipelineStateDescription psoDesc = new()
         {
             RootSignature = _rootSignature,
@@ -97,29 +98,41 @@ unsafe class DrawTexturedCubeApp : D3D12Application
         _pipelineState = Device.CreateGraphicsPipelineState<ID3D12PipelineState>(psoDesc);
     }
 
-    private void CreateTexture()
+    private void CreateTexture(bool fromFile = true)
     {
-        Span<Color> pixels = [
-            0xFFFFFFFF,
-            0x00000000,
-            0xFFFFFFFF,
-            0x00000000,
-            0x00000000,
-            0xFFFFFFFF,
-            0x00000000,
-            0xFFFFFFFF,
-            0xFFFFFFFF,
-            0x00000000,
-            0xFFFFFFFF,
-            0x00000000,
-            0x00000000,
-            0xFFFFFFFF,
-            0x00000000,
-            0xFFFFFFFF,
-        ];
+        if (fromFile)
+        {
+            string assetsPath = Path.Combine(AppContext.BaseDirectory, "Textures");
+            string textureFile = Path.Combine(assetsPath, "10points.png");
 
-        _texture = D3D12ResourceUtils.CreateTexture2D(Device, UploadBatch, 4, 4,
-            Format.R8G8B8A8_UNorm, pixels);
+            Image image = Image.FromFile(textureFile)!;
+            _texture = D3D12ResourceUtils.CreateTexture2D(Device, UploadBatch,
+                image.Width, image.Height, image.Format, image.Data.Span,
+                generateMips: true);
+        }
+        else
+        {
+            Span<Color> pixels = [
+                0xFFFFFFFF,
+                0x00000000,
+                0xFFFFFFFF,
+                0x00000000,
+                0x00000000,
+                0xFFFFFFFF,
+                0x00000000,
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0x00000000,
+                0xFFFFFFFF,
+                0x00000000,
+                0x00000000,
+                0xFFFFFFFF,
+                0x00000000,
+                0xFFFFFFFF,
+            ];
+
+            _texture = D3D12ResourceUtils.CreateTexture2D(Device, UploadBatch, 4, 4, Format.R8G8B8A8_UNorm, pixels);
+        }
     }
 
     protected override void OnDestroy()

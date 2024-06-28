@@ -156,7 +156,7 @@ public static unsafe class D3D12ResourceUtils
         D3D12ResourceUploadBatch resourceUpload,
         int width, int height, Format format,
         Span<T> data,
-        //bool generateMips = false,
+        bool generateMips = false,
         ResourceStates afterState = ResourceStates.PixelShaderResource,
         ResourceFlags flags = ResourceFlags.None)
         where T : unmanaged
@@ -166,7 +166,6 @@ public static unsafe class D3D12ResourceUtils
             throw new InvalidOperationException($"ERROR: Resource dimensions too large for DirectX 12 (2D: size {width} by {height})");
         }
 
-        bool generateMips = false;
         ushort mipLevels = 1;
         if (generateMips)
         {
