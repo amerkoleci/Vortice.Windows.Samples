@@ -90,7 +90,7 @@ internal class DrawQuadApp : D3D12Application
 
         // Vertex Buffer
         int stride = VertexPositionColor.SizeInBytes;
-        int vertexBufferSize = 3 * stride;
+        int vertexBufferSize = 4 * stride;
         CommandList.IASetVertexBuffers(0, new VertexBufferView(_vertexBuffer.GPUVirtualAddress, vertexBufferSize, stride));
 
         // Index Buffer
