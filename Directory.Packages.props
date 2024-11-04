@@ -2,17 +2,17 @@
   <!-- https://learn.microsoft.com/nuget/consume-packages/central-package-management -->
   <!-- Package versions for package references across all projects -->
   <PropertyGroup>
-    <VorticeWindowsVersion>3.5.8-beta</VorticeWindowsVersion>
+    <VorticeWindowsVersion>3.6.2</VorticeWindowsVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageVersion Include="CommunityToolkit.Diagnostics" Version="8.2.2" />
     <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.106" />
 
-    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1" />
-    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.5.240607001" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.6.240923002" />
 
-    <PackageVersion Include="Vortice.Mathematics" Version="1.7.8" />
+    <PackageVersion Include="Vortice.Mathematics" Version="1.9.2" />
     <PackageVersion Include="Vortice.Direct2D1" Version="$(VorticeWindowsVersion)" />
     <PackageVersion Include="Vortice.Direct3D11" Version="$(VorticeWindowsVersion)" />
     <PackageVersion Include="Vortice.Direct3D12" Version="$(VorticeWindowsVersion)" />
@@ -22,7 +22,7 @@
     <PackageVersion Include="Vortice.Dxc" Version="$(VorticeWindowsVersion)" />
     <PackageVersion Include="Vortice.WinUI" Version="$(VorticeWindowsVersion)" />
 
-    <PackageVersion Include="SkiaSharp" Version="3.0.0-preview.3.1" />
+    <PackageVersion Include="SkiaSharp" Version="3.0.0-preview.5.4" />
   </ItemGroup>
 
 </Project>

@@ -34,8 +34,8 @@ public abstract class D3D12Application : Application
     private readonly AutoResetEvent _frameFenceEvent;
 
     private readonly ID3D12Resource[] _renderTargets;
-    private readonly int[] _renderTargetDescriptorIndexes;
-    private int _depthStencilViewDescriptorIndex = -1;
+    private readonly uint[] _renderTargetDescriptorIndexes;
+    private uint _depthStencilViewDescriptorIndex = ~0u;
 
     private readonly ID3D12CommandAllocator[] _commandAllocators;
 
@@ -102,7 +102,7 @@ public abstract class D3D12Application : Application
         {
             if (factory6 != null)
             {
-                for (int adapterIndex = 0; factory6.EnumAdapterByGpuPreference(adapterIndex, GpuPreference.HighPerformance, out IDXGIAdapter1? adapter).Success; adapterIndex++)
+                for (uint adapterIndex = 0; factory6.EnumAdapterByGpuPreference(adapterIndex, GpuPreference.HighPerformance, out IDXGIAdapter1? adapter).Success; adapterIndex++)
                 {
                     AdapterDescription1 desc = adapter!.Description1;
 
@@ -124,7 +124,7 @@ public abstract class D3D12Application : Application
             }
             else
             {
-                for (int adapterIndex = 0;
+                for (uint adapterIndex = 0;
                     _dxgiFactory.EnumAdapters1(adapterIndex, out IDXGIAdapter1? adapter).Success;
                     adapterIndex++)
                 {
@@ -204,7 +204,7 @@ public abstract class D3D12Application : Application
 
         // Create frame data
         _renderTargets = new ID3D12Resource[MainWindow.BackBufferCount];
-        _renderTargetDescriptorIndexes = new int[MainWindow.BackBufferCount];
+        _renderTargetDescriptorIndexes = new uint[MainWindow.BackBufferCount];
         CreateWindowSizeDependentResources();
 
         _commandAllocators = new ID3D12CommandAllocator[MainWindow.BackBufferCount];
@@ -232,7 +232,7 @@ public abstract class D3D12Application : Application
     public D3D12DescriptorAllocator SamplerHeap { get; }
 
     public IDXGISwapChain3 SwapChain { get; private set; }
-    public int BackBufferIndex { get; private set; }
+    public uint BackBufferIndex { get; private set; }
 
     public Format ColorFormat => _colorFormat;
     public ColorSpaceType ColorSpace { get; private set; } = ColorSpaceType.RgbFullG22NoneP709;
@@ -359,7 +359,7 @@ public abstract class D3D12Application : Application
         }
 
         DepthStencilTexture?.Dispose();
-        if (_depthStencilViewDescriptorIndex != -1)
+        if (_depthStencilViewDescriptorIndex != ~0u)
         {
             DepthStencilViewHeap.ReleaseDescriptor(_depthStencilViewDescriptorIndex);
         }
@@ -378,11 +378,11 @@ public abstract class D3D12Application : Application
             Format backBufferFormat = SwapChain.Description1.Format;
 
             // If the swap chain already exists, resize it.
-            int backBufferCount = MainWindow.BackBufferCount;
+            uint backBufferCount = MainWindow.BackBufferCount;
             Result hr = SwapChain.ResizeBuffers(
                 backBufferCount,
-                (int)size.Width,
-                (int)size.Height,
+                (uint)size.Width,
+                (uint)size.Height,
                 backBufferFormat,
                 _isTearingSupported ? SwapChainFlags.AllowTearing : SwapChainFlags.None
                 );
@@ -410,7 +410,7 @@ public abstract class D3D12Application : Application
         UpdateColorSpace();
 
         // Create a RTV for each frame.
-        for (int i = 0; i < _renderTargets.Length; i++)
+        for (uint i = 0; i < _renderTargets.Length; i++)
         {
             _renderTargets[i] = SwapChain.GetBuffer<ID3D12Resource>(i);
             _renderTargetDescriptorIndexes[i] = RenderTargetViewHeap.AllocateDescriptor();
@@ -514,7 +514,7 @@ public abstract class D3D12Application : Application
 
     protected override void EndDraw()
     {
-        int syncInterval = 1;
+        uint syncInterval = 1;
         PresentFlags presentFlags = PresentFlags.None;
         if (!EnableVerticalSync)
         {
@@ -596,11 +596,11 @@ public abstract class D3D12Application : Application
         IDXGIOutput? bestOutput = default;
         int bestIntersectArea = -1;
 
-        for (int adapterIndex = 0;
+        for (uint adapterIndex = 0;
             _dxgiFactory.EnumAdapters1(adapterIndex, out IDXGIAdapter1? adapter).Success;
             adapterIndex++)
         {
-            for (int outputIndex = 0;
+            for (uint outputIndex = 0;
                 adapter.EnumOutputs(outputIndex, out IDXGIOutput? output).Success;
                 outputIndex++)
             {
@@ -782,7 +782,7 @@ public abstract class D3D12Application : Application
 
                 _dataPointer = GCHandle.Alloc(data, GCHandleType.Pinned);
 
-                _blob = DxcCompiler.Utils.CreateBlob(_dataPointer.AddrOfPinnedObject(), data.Length, Vortice.Dxc.Dxc.DXC_CP_UTF8);
+                _blob = DxcCompiler.Utils.CreateBlob(_dataPointer.AddrOfPinnedObject(), (uint)data.Length, Vortice.Dxc.Dxc.DXC_CP_UTF8);
             }
 
             public void Dispose()

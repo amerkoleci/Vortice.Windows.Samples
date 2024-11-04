@@ -20,8 +20,8 @@ unsafe class DrawTexturedCubeApp : D3D12Application
     private ID3D12Resource _constantBuffer;
     private void* _cbvData = default;
     private ID3D12Resource _texture;
-    private int _srvRootParameterIndex = -1;
-    private int _descriptorTableSRVBaseIndex;
+    private uint _srvRootParameterIndex = ~0u;
+    private uint _descriptorTableSRVBaseIndex;
     private ID3D12RootSignature _rootSignature;
     private ID3D12PipelineState _pipelineState;
 
@@ -175,12 +175,12 @@ unsafe class DrawTexturedCubeApp : D3D12Application
         CommandList.SetGraphicsRootDescriptorTable(_srvRootParameterIndex, gpuHadle);
 
         // Vertex Buffer
-        int stride = VertexPositionNormalTexture.SizeInBytes;
-        int vertexBufferSize = 24 * stride;
+        uint stride = VertexPositionNormalTexture.SizeInBytes;
+        uint vertexBufferSize = 24 * stride;
         CommandList.IASetVertexBuffers(0, new VertexBufferView(_vertexBuffer.GPUVirtualAddress, vertexBufferSize, stride));
 
         // Index Buffer
-        int indexBufferSize = 36 * sizeof(ushort);
+        uint indexBufferSize = 36 * sizeof(ushort);
         CommandList.IASetIndexBuffer(new IndexBufferView(_indexBuffer.GPUVirtualAddress, indexBufferSize, false));
 
         // Draw cube now

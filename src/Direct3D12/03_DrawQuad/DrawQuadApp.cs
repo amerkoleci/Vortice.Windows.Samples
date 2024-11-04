@@ -89,12 +89,12 @@ internal class DrawQuadApp : D3D12Application
         CommandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
 
         // Vertex Buffer
-        int stride = VertexPositionColor.SizeInBytes;
-        int vertexBufferSize = 3 * stride;
+        uint stride = VertexPositionColor.SizeInBytes;
+        uint vertexBufferSize = 3 * stride;
         CommandList.IASetVertexBuffers(0, new VertexBufferView(_vertexBuffer.GPUVirtualAddress, vertexBufferSize, stride));
 
         // Index Buffer
-        int indexBufferSize = 6 * sizeof(ushort);
+        uint indexBufferSize = 6 * sizeof(ushort);
         CommandList.IASetIndexBuffer(new IndexBufferView(_indexBuffer.GPUVirtualAddress, indexBufferSize, false));
         CommandList.DrawIndexedInstanced(6, 1, 0, 0, 0);
     }

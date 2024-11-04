@@ -90,7 +90,7 @@ public sealed class D3D12ResourceUploadBatch
         _commandType = CommandListType.Direct;
         _inBeginEndBlock = false;
         _commandList.Dispose(); _commandList = default;
-        _commandAllocator.Dispose(); _commandAllocator = default;
+        _commandAllocator!.Dispose(); _commandAllocator = default;
 
         // Swap above should have cleared these
         Debug.Assert(_trackedObjects.Count == 0);
@@ -140,8 +140,7 @@ public sealed class D3D12ResourceUploadBatch
         _commandList!.ResourceBarrierTransition(resource, stateBefore, stateAfter);
     }
 
-    public unsafe void Upload(ID3D12Resource resource, int subresourceIndexStart,
-        SubresourceData* subRes, int numSubresources)
+    public unsafe void Upload(ID3D12Resource resource, uint subresourceIndexStart, SubresourceData* subRes, uint numSubresources)
     {
         if (!_inBeginEndBlock)
             throw new InvalidOperationException("Can't call Upload on a closed ResourceUploadBatch.");
@@ -281,7 +280,7 @@ public sealed class D3D12ResourceUploadBatch
             DescriptorHeapFlags.ShaderVisible);
         ID3D12DescriptorHeap descriptorHeap = Device.CreateDescriptorHeap(descriptorHeapDesc);
         descriptorHeap.Name = "ResourceUploadBatch";
-        int descriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
+        uint descriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
 
         // Create the top-level SRV
         CpuDescriptorHandle handleIt = descriptorHeap.GetCPUDescriptorHandleForHeapStart();
@@ -296,7 +295,7 @@ public sealed class D3D12ResourceUploadBatch
         Device.CreateShaderResourceView(staging, srvDesc, handleIt);
 
         // Create the UAVs for the tail
-        for (int mip = 1; mip < desc.MipLevels; ++mip)
+        for (uint mip = 1; mip < desc.MipLevels; ++mip)
         {
             UnorderedAccessViewDescription uavDesc = new()
             {
@@ -305,7 +304,7 @@ public sealed class D3D12ResourceUploadBatch
             };
             uavDesc.Texture2D.MipSlice = mip;
 
-            handleIt.Offset(descriptorSize);
+            handleIt.Offset((int)descriptorSize);
             Device.CreateUnorderedAccessView(staging, null, uavDesc, handleIt);
         }
 
@@ -322,12 +321,12 @@ public sealed class D3D12ResourceUploadBatch
         _commandList.SetComputeRootDescriptorTable((int)GenerateMipsResources.RootParameterIndex.SourceTexture, handle);
 
         // Get the descriptor handle -- uavH will increment over each loop
-        GpuDescriptorHandle uavH = new(handle, descriptorSize); // offset by 1 descriptor
+        GpuDescriptorHandle uavH = new(handle, 0, descriptorSize); // offset by 1 descriptor
 
         // Process each mip
-        int mipWidth = (int)desc.Width;
-        int mipHeight = desc.Height;
-        for (int mip = 1; mip < desc.MipLevels; ++mip)
+        uint mipWidth = (uint)desc.Width;
+        uint mipHeight = desc.Height;
+        for (uint mip = 1; mip < desc.MipLevels; ++mip)
         {
             mipWidth = Math.Max(1, mipWidth >> 1);
             mipHeight = Math.Max(1, mipHeight >> 1);
@@ -337,14 +336,14 @@ public sealed class D3D12ResourceUploadBatch
             _commandList.ResourceBarrier(srv2uavDesc);
 
             // Bind the mip subresources
-            _commandList.SetComputeRootDescriptorTable((int)GenerateMipsResources.RootParameterIndex.TargetTexture, uavH);
+            _commandList.SetComputeRootDescriptorTable((uint)GenerateMipsResources.RootParameterIndex.TargetTexture, uavH);
 
             // Set constants
             GenerateMipsResources.ConstantData constants;
-            constants.SrcMipIndex = (uint)mip - 1;
+            constants.SrcMipIndex = mip - 1;
             constants.InvOutTexelSize = new(1 / (float)mipWidth, 1 / (float)mipHeight);
             _commandList.SetComputeRoot32BitConstants(
-                (int)GenerateMipsResources.RootParameterIndex.Constants,
+                (uint)GenerateMipsResources.RootParameterIndex.Constants,
                 GenerateMipsResources.Num32BitConstants,
                 &constants,
                 0);
@@ -364,7 +363,7 @@ public sealed class D3D12ResourceUploadBatch
             _commandList.ResourceBarrier(uav2srvDesc);
 
             // Offset the descriptor heap handles
-            uavH.Offset(descriptorSize);
+            uavH.Offset((int)descriptorSize);
         }
 
         // If the staging resource is NOT the same as the resource, we need to copy everything back
@@ -411,7 +410,7 @@ public sealed class D3D12ResourceUploadBatch
         copyDesc.Flags |= ResourceFlags.AllowUnorderedAccess;
 
         // Create a resource with the same description, but without SRGB, and with UAV flags
-        ID3D12Resource resourceCopy  = Device.CreateCommittedResource(
+        ID3D12Resource resourceCopy = Device.CreateCommittedResource(
             HeapType.Default,
             HeapFlags.None,
             copyDesc,
@@ -419,7 +418,7 @@ public sealed class D3D12ResourceUploadBatch
             );
 
         resourceCopy.Name = "GenerateMips Resource Copy";
-        
+
         ResourceStates originalState = _commandType == CommandListType.Compute
             ? ResourceStates.CopyDest : ResourceStates.PixelShaderResource;
 
@@ -618,7 +617,7 @@ public sealed class D3D12ResourceUploadBatch
         public readonly ID3D12RootSignature RootSignature;
         public readonly ID3D12PipelineState GenerateMipsPSO;
 
-        public static readonly int Num32BitConstants = sizeof(ConstantData) / sizeof(uint);
+        public static uint Num32BitConstants => (uint)sizeof(ConstantData) / sizeof(uint);
         public const int ThreadGroupSize = 8;
 
         #region Bytecode
@@ -647,6 +646,7 @@ public sealed class D3D12ResourceUploadBatch
                 | RootSignatureFlags.DenyPixelShaderRootAccess;
 
             StaticSamplerDescription sampler = new(
+                0,
                 Filter.MinMagLinearMipPoint,
                 TextureAddressMode.Clamp,
                 TextureAddressMode.Clamp,
@@ -655,17 +655,18 @@ public sealed class D3D12ResourceUploadBatch
                 16,
                 ComparisonFunction.LessEqual,
                 StaticBorderColor.OpaqueWhite, 0.0f, float.MaxValue,
-                0, 0, ShaderVisibility.All);
+                ShaderVisibility.All);
 
             DescriptorRange sourceDescriptorRange = new(DescriptorRangeType.ShaderResourceView, 1, 0);
             DescriptorRange targetDescriptorRange = new(DescriptorRangeType.UnorderedAccessView, 1, 0);
 
-            RootParameter[] rootParameters = new RootParameter[(int)RootParameterIndex.Count];
-            rootParameters[(int)RootParameterIndex.Constants] = new RootParameter(new RootConstants(0, 0, Num32BitConstants), ShaderVisibility.All);
-            rootParameters[(int)RootParameterIndex.SourceTexture] = new RootParameter(new RootDescriptorTable(sourceDescriptorRange), ShaderVisibility.All);
-            rootParameters[(int)RootParameterIndex.TargetTexture] = new RootParameter(new RootDescriptorTable(targetDescriptorRange), ShaderVisibility.All);
-
-            RootSignature = device.CreateRootSignature<ID3D12RootSignature>(
+            RootParameter[] rootParameters =
+            [
+                new RootParameter(new RootConstants(0, 0, Num32BitConstants), ShaderVisibility.All),
+                new RootParameter(new RootDescriptorTable(sourceDescriptorRange), ShaderVisibility.All),
+                new RootParameter(new RootDescriptorTable(targetDescriptorRange), ShaderVisibility.All),
+            ];
+            RootSignature = device.CreateRootSignature(
                 new RootSignatureDescription(rootSignatureFlags, rootParameters,
                 [
                     sampler

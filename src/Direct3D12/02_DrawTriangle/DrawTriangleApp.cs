@@ -82,8 +82,8 @@ class DrawTriangleApp : D3D12Application
         CommandList.SetGraphicsRootSignature(_rootSignature);
         CommandList.SetPipelineState(_pipelineState);
 
-        int stride = VertexPositionColor.SizeInBytes;
-        int vertexBufferSize = 3 * stride;
+        uint stride = VertexPositionColor.SizeInBytes;
+        uint vertexBufferSize = 3 * stride;
 
         CommandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
 

@@ -11,7 +11,7 @@ namespace Vortice.Framework;
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
 public readonly record struct VertexPositionNormalTexture
 {
-    public static readonly unsafe int SizeInBytes = sizeof(VertexPositionNormalTexture);
+    public static unsafe uint SizeInBytes => (uint)sizeof(VertexPositionNormalTexture);
 
     public static InputElementDescription[] InputElements =>
     [

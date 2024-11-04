@@ -14,7 +14,7 @@ public sealed class Image
 {
     private static readonly Lazy<IWICImagingFactory> s_imagingFactory = new(() => new IWICImagingFactory());
 
-    private Image(int width, int height, Format format, Span<byte> data)
+    private Image(uint width, uint height, Format format, Span<byte> data)
     {
         Width = width;
         Height = height;
@@ -23,19 +23,19 @@ public sealed class Image
         BytesPerPixel = format.GetBitsPerPixel() / 8;
     }
 
-    public static Image Create<T>(int width, int height, Format format, Span<T> data)
+    public static Image Create<T>(uint width, uint height, Format format, Span<T> data)
         where T : unmanaged
     {
         return new(width, height, format, MemoryMarshal.Cast<T, byte>(data));
     }
 
-    public int Width { get; }
-    public int Height { get; }
+    public uint Width { get; }
+    public uint Height { get; }
     public Format Format { get; }
     public Memory<byte> Data { get; }
 
-    public int BytesPerPixel { get; }
-    public int RowPitch => Width * BytesPerPixel;
+    public uint BytesPerPixel { get; }
+    public uint RowPitch => Width * BytesPerPixel;
 
     public static Image? FromFile(string filePath, int width = 0, int height = 0)
     {
@@ -100,11 +100,11 @@ public sealed class Image
         Format format = Format.R8G8B8A8_UNorm;
         if (bitmap.ColorType == SKColorType.Rgba8888)
         {
-            return Create(bitmap.Width, bitmap.Height, format, bitmap.GetPixelSpan());
+            return Create((uint)bitmap.Width, (uint)bitmap.Height, format, bitmap.GetPixelSpan());
         }
 
         Span<Color> pixels = SKColorToColor(bitmap.Pixels);
-        return Create(bitmap.Width, bitmap.Height, format, pixels);
+        return Create((uint)bitmap.Width, (uint)bitmap.Height, format, pixels);
     }
 
     private static Span<Color> SKColorToColor(Span<SKColor> pixels)
@@ -122,7 +122,7 @@ public sealed class Image
     #endregion
 
     #region WIC
-    private static unsafe Image? FromStreamWIC(Stream stream, int width = 0, int height = 0)
+    private static unsafe Image? FromStreamWIC(Stream stream, uint width = 0, uint height = 0)
     {
         using IWICBitmapDecoder decoder = ImagingFactory().CreateDecoderFromStream(stream);
         using IWICBitmapFrameDecode frame = decoder.GetFrame(0);
@@ -135,7 +135,7 @@ public sealed class Image
 
         bool useWIC2 = true;
         Format format = PixelFormat.ToDXGIFormat(pixelFormat);
-        int bpp = 0;
+        uint bpp = 0;
         if (format == Format.Unknown)
         {
             if (pixelFormat == PixelFormat.Format96bppRGBFixedPoint)
@@ -216,16 +216,16 @@ public sealed class Image
         } 
 #endif
 
-        int rowPitch = (size.Width * bpp + 7) / 8;
-        int sizeInBytes = rowPitch * size.Height;
+        uint rowPitch = ((uint)size.Width * bpp + 7) / 8;
+        uint sizeInBytes = rowPitch * (uint)size.Height;
 
         byte[] pixels = new byte[sizeInBytes];
 
         if (width == 0)
-            width = size.Width;
+            width = (uint)size.Width;
 
         if (height == 0)
-            height = size.Height;
+            height = (uint)size.Height;
 
         // Load image data
         if (convertGUID == pixelFormat && size.Width == width && size.Height == height)

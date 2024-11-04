@@ -6,7 +6,7 @@ using System.Numerics;
 using CommunityToolkit.Diagnostics;
 using SharpGen.Runtime;
 using Vortice.Direct3D12;
-using DescriptorIndex = System.Int32;
+using DescriptorIndex = System.UInt32;
 
 namespace Vortice.Framework;
 
@@ -22,9 +22,9 @@ public class D3D12DescriptorAllocator : IDisposable
     private bool[] _allocatedDescriptors = [];
     private DescriptorIndex _searchStart;
 
-    private const DescriptorIndex InvalidDescriptorIndex = -1;
+    private const DescriptorIndex InvalidDescriptorIndex = ~0u;
 
-    public D3D12DescriptorAllocator(ID3D12Device device, DescriptorHeapType type, int numDescriptors)
+    public D3D12DescriptorAllocator(ID3D12Device device, DescriptorHeapType type, uint numDescriptors)
     {
         _device = device;
         HeapType = type;
@@ -36,10 +36,10 @@ public class D3D12DescriptorAllocator : IDisposable
     }
 
     public DescriptorHeapType HeapType { get; }
-    public int NumDescriptors { get; private set; }
-    public int NumAllocatedDescriptors { get; private set; }
+    public uint NumDescriptors { get; private set; }
+    public uint NumAllocatedDescriptors { get; private set; }
     public bool ShaderVisible { get; }
-    public int Stride { get; }
+    public uint Stride { get; }
 
     public ID3D12DescriptorHeap Heap => _heap!;
     public ID3D12DescriptorHeap? ShaderVisibleHeap => _shaderVisibleHeap;
@@ -53,7 +53,7 @@ public class D3D12DescriptorAllocator : IDisposable
 
     public DescriptorIndex AllocateDescriptor() => AllocateDescriptors(1);
 
-    public DescriptorIndex AllocateDescriptors(int count)
+    public DescriptorIndex AllocateDescriptors(uint count)
     {
         lock (_mutex)
         {
@@ -71,9 +71,7 @@ public class D3D12DescriptorAllocator : IDisposable
 
                 if (freeCount >= count)
                 {
-                    int foundIndexInt = index - count + 1;
-
-                    foundIndex = foundIndexInt;
+                    foundIndex = index > 0 ? index - count + 1 : 0;
                     found = true;
                     break;
                 }
@@ -103,7 +101,7 @@ public class D3D12DescriptorAllocator : IDisposable
 
     public void ReleaseDescriptor(DescriptorIndex index) => ReleaseDescriptors(index, 1);
 
-    public void ReleaseDescriptors(DescriptorIndex baseIndex, int count = 1)
+    public void ReleaseDescriptors(DescriptorIndex baseIndex, uint count = 1)
     {
         if (count == 0)
             return;
@@ -132,27 +130,27 @@ public class D3D12DescriptorAllocator : IDisposable
     public CpuDescriptorHandle GetCpuHandle(DescriptorIndex index)
     {
         CpuDescriptorHandle handle = _startCpuHandle;
-        return handle.Offset(index, Stride);
+        return handle.Offset((int)index, Stride);
     }
 
     public CpuDescriptorHandle GetCpuHandleShaderVisible(DescriptorIndex index)
     {
         CpuDescriptorHandle handle = _startCpuHandleShaderVisible;
-        return handle.Offset(index, Stride);
+        return handle.Offset((int)index, Stride);
     }
 
     public GpuDescriptorHandle GetGpuHandle(DescriptorIndex index)
     {
         GpuDescriptorHandle handle = _startGpuHandleShaderVisible;
-        return handle.Offset(index, Stride);
+        return handle.Offset((int)index, Stride);
     }
 
-    public void CopyToShaderVisibleHeap(DescriptorIndex index, int count = 1)
+    public void CopyToShaderVisibleHeap(DescriptorIndex index, uint count = 1)
     {
         _device.CopyDescriptorsSimple(count, GetCpuHandleShaderVisible(index), GetCpuHandle(index), HeapType);
     }
 
-    private bool AllocateResources(int numDescriptors)
+    private bool AllocateResources(uint numDescriptors)
     {
         NumDescriptors = numDescriptors;
         _heap?.Dispose();
@@ -189,10 +187,10 @@ public class D3D12DescriptorAllocator : IDisposable
         return true;
     }
 
-    private bool Grow(int minRequiredSize)
+    private bool Grow(uint minRequiredSize)
     {
-        int oldSize = NumDescriptors;
-        int newSize = (int)BitOperations.RoundUpToPowerOf2((uint)minRequiredSize);
+        uint oldSize = NumDescriptors;
+        uint newSize = BitOperations.RoundUpToPowerOf2(minRequiredSize);
 
         ID3D12DescriptorHeap? oldHeap = _heap;
 

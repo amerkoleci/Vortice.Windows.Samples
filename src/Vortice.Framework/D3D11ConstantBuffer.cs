@@ -20,7 +20,7 @@ public sealed unsafe class D3D11ConstantBuffer<T> : DisposableObject
 
         BufferDescription description = new()
         {
-            ByteWidth = (int)MathHelper.AlignUp((uint)sizeof(T), 16),
+            ByteWidth = MathHelper.AlignUp((uint)sizeof(T), 16),
             BindFlags = BindFlags.ConstantBuffer,
             CPUAccessFlags = CpuAccessFlags.Write,
             Usage = ResourceUsage.Dynamic

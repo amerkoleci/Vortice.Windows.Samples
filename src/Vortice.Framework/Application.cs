@@ -25,7 +25,6 @@ public abstract partial class Application
     private readonly object _tickLock = new();
 
     private readonly Stopwatch _stopwatch = new();
-    private int _backBufferIndex;
 
     public AppWindow MainWindow => _platform.MainWindow;
     public virtual SizeI DefaultSize => new(1280, 720);

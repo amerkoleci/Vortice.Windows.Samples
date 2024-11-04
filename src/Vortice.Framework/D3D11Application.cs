@@ -145,7 +145,7 @@ public abstract class D3D11Application : Application
         IDXGIFactory6? factory6 = _dxgiFactory.QueryInterfaceOrNull<IDXGIFactory6>();
         if (factory6 != null)
         {
-            for (int adapterIndex = 0;
+            for (uint adapterIndex = 0;
                 factory6.EnumAdapterByGpuPreference(adapterIndex, GpuPreference.HighPerformance, out IDXGIAdapter1? adapter).Success;
                 adapterIndex++)
             {
@@ -170,7 +170,7 @@ public abstract class D3D11Application : Application
             factory6.Dispose();
         }
 
-        for (int adapterIndex = 0;
+        for (uint adapterIndex = 0;
             _dxgiFactory.EnumAdapters1(adapterIndex, out IDXGIAdapter1? adapter).Success;
             adapterIndex++)
         {
@@ -212,8 +212,8 @@ public abstract class D3D11Application : Application
             // If the swap chain already exists, resize it.
             Result hr = SwapChain.ResizeBuffers(
                 MainWindow.BackBufferCount,
-                (int)size.Width,
-                (int)size.Height,
+                (uint)size.Width,
+                (uint)size.Height,
                 backBufferFormat,
                 _isTearingSupported ? SwapChainFlags.AllowTearing : SwapChainFlags.None
                 );
@@ -283,11 +283,11 @@ public abstract class D3D11Application : Application
         IDXGIOutput? bestOutput = default;
         int bestIntersectArea = -1;
 
-        for (int adapterIndex = 0;
+        for (uint adapterIndex = 0;
             _dxgiFactory.EnumAdapters1(adapterIndex, out IDXGIAdapter1? adapter).Success;
             adapterIndex++)
         {
-            for (int outputIndex = 0;
+            for (uint outputIndex = 0;
                 adapter.EnumOutputs(outputIndex, out IDXGIOutput? output).Success;
                 outputIndex++)
             {
@@ -393,7 +393,7 @@ public abstract class D3D11Application : Application
 
     protected override void EndDraw()
     {
-        int syncInterval = 1;
+        uint syncInterval = 1;
         PresentFlags presentFlags = PresentFlags.None;
         if (!EnableVerticalSync)
         {
@@ -487,7 +487,7 @@ public abstract class D3D11Application : Application
                 SubresourceData[] subresources = new SubresourceData[mipLevels];
                 for (int i = 0; i < mipLevels; i++)
                 {
-                    FormatHelper.GetSurfaceInfo(images[i].Format, images[i].Width, images[i].Height, out int rowPitch, out int slicePitch);
+                    FormatHelper.GetSurfaceInfo(images[i].Format, images[i].Width, images[i].Height, out uint rowPitch, out uint slicePitch);
 
                     fixed (byte* dataPointer = images[i].Data.Span)
                     {
@@ -497,7 +497,7 @@ public abstract class D3D11Application : Application
 
                 texture = Device.CreateTexture2D(new Texture2DDescription(
                     images[0].Format, images[0].Width, images[0].Height,
-                    mipLevels: mipLevels,
+                    mipLevels: (uint)mipLevels,
                     bindFlags: BindFlags.ShaderResource
                     ),  subresources);
             }

@@ -1,7 +1,7 @@
 <Project>
 
   <!-- Settings that are only set for executables -->
-  <PropertyGroup Condition="'$(OutputType)' != 'Library' AND '$(UseWindowsForms)' != 'true'">
+  <PropertyGroup Condition="'$(OutputType)' != 'Library' AND '$(UseWindowsForms)' != 'true' AND '$(UseWinUI)' != 'true'">
     <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 

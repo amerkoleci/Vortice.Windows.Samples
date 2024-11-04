@@ -15,7 +15,7 @@ using Vortice.Mathematics;
 unsafe class DrawConstBuffersApp : D3D12Application
 {
     private ID3D12DescriptorHeap _cbvHeap;
-    private int _cbvDescriptorSize;
+    private uint _cbvDescriptorSize;
 
     private ID3D12Resource _vertexBuffer;
     private byte* _cbvData = default;
@@ -40,7 +40,7 @@ unsafe class DrawConstBuffersApp : D3D12Application
         _vertexBuffer = D3D12ResourceUtils.CreateStaticBuffer(Device, UploadBatch, triangleVertices, ResourceStates.VertexAndConstantBuffer);
         UploadBatch.End(DirectQueue);
 
-        int constantBufferSize = sizeof(SceneConstantBuffer);
+        uint constantBufferSize = (uint)sizeof(SceneConstantBuffer);
         _constantBuffer = Device.CreateCommittedResource(
             HeapType.Upload,
             ResourceDescription.Buffer(constantBufferSize),
@@ -130,8 +130,8 @@ unsafe class DrawConstBuffersApp : D3D12Application
         CommandList.SetDescriptorHeaps(_cbvHeap);
         CommandList.SetGraphicsRootDescriptorTable(0, _cbvHeap.GetGPUDescriptorHandleForHeapStart());
 
-        int stride = VertexPositionColor.SizeInBytes;
-        int vertexBufferSize = 3 * stride;
+        uint stride = VertexPositionColor.SizeInBytes;
+        uint vertexBufferSize = 3 * stride;
 
         CommandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
 

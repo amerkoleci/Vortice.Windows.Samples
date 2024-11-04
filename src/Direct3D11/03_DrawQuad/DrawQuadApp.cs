@@ -31,7 +31,7 @@ public sealed class DrawQuadApp : D3D11Application
         ];
         if (_dynamicBuffer)
         {
-            _vertexBuffer = Device.CreateBuffer(source.Length * VertexPositionColor.SizeInBytes, BindFlags.VertexBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write);
+            _vertexBuffer = Device.CreateBuffer((uint)(source.Length * VertexPositionColor.SizeInBytes), BindFlags.VertexBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write);
             // It can be updated in this way
             // MappedSubresource mappedResource = DeviceContext.Map(_vertexBuffer, MapMode.WriteDiscard);
             // source.CopyTo(new Span<VertexPositionColor>(mappedResource.DataPointer.ToPointer(), source.Length));

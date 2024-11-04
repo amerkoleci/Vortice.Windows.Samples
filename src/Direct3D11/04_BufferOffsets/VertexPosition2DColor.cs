@@ -10,7 +10,7 @@ using Vortice.Mathematics;
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
 public unsafe readonly struct VertexPosition2DColor
 {
-    public static readonly int SizeInBytes = sizeof(VertexPosition2DColor);
+    public static uint SizeInBytes => (uint)sizeof(VertexPosition2DColor);
 
     public static readonly InputElementDescription[] InputElements = new[]
     {

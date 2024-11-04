@@ -12,7 +12,7 @@ namespace Vortice.Framework;
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
 public readonly record struct VertexPositionColor
 {
-    public static readonly unsafe int SizeInBytes = sizeof(VertexPositionColor);
+    public static unsafe uint SizeInBytes => (uint)sizeof(VertexPositionColor);
 
     public static readonly InputElementDescription[] InputElements =
     [

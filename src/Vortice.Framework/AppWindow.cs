@@ -13,7 +13,7 @@ public abstract class AppWindow
     public abstract SizeF ClientSize { get; }
     public abstract Rectangle Bounds { get; }
     public float AspectRatio => (float)ClientSize.Width / ClientSize.Height;
-    public int BackBufferCount { get; } = 2;
+    public uint BackBufferCount { get; } = 2;
 
     public event EventHandler? SizeChanged;
 

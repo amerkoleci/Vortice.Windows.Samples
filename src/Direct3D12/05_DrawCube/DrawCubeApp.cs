@@ -113,12 +113,12 @@ unsafe class DrawCubeApp : D3D12Application
         CommandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
 
         // Vertex Buffer
-        int stride = VertexPositionNormalTexture.SizeInBytes;
-        int vertexBufferSize = 24 * stride;
+        uint stride = VertexPositionNormalTexture.SizeInBytes;
+        uint vertexBufferSize = 24 * stride;
         CommandList.IASetVertexBuffers(0, new VertexBufferView(_vertexBuffer.GPUVirtualAddress, vertexBufferSize, stride));
 
         // Index Buffer
-        int indexBufferSize = 36 * sizeof(ushort);
+        uint indexBufferSize = 36 * sizeof(ushort);
         CommandList.IASetIndexBuffer(new IndexBufferView(_indexBuffer.GPUVirtualAddress, indexBufferSize, false));
 
         CommandList.DrawIndexedInstanced(36, 1, 0, 0, 0);

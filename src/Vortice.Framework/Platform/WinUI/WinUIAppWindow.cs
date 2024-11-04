@@ -93,8 +93,8 @@ public partial class WinUIAppWindow : AppWindow
 
         SwapChainDescription1 desc = new()
         {
-            Width = (int)size.Width,
-            Height = (int)size.Height,
+            Width = (uint)size.Width,
+            Height = (uint)size.Height,
             Format = backBufferFormat,
             BufferCount = BackBufferCount,
             BufferUsage = Usage.RenderTargetOutput,

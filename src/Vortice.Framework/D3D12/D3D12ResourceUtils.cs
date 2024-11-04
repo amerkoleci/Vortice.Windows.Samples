@@ -63,7 +63,7 @@ public static unsafe class D3D12ResourceUtils
         {
             SubresourceData initData = new()
             {
-                Data = (nint)dataPtr,
+                pData = dataPtr,
             };
 
             resourceUpload.Upload(buffer, 0, &initData, 1);
@@ -154,7 +154,7 @@ public static unsafe class D3D12ResourceUtils
     public static ID3D12Resource CreateTexture2D<T>(
         ID3D12Device device,
         D3D12ResourceUploadBatch resourceUpload,
-        int width, int height, Format format,
+        uint width, uint height, Format format,
         Span<T> data,
         bool generateMips = false,
         ResourceStates afterState = ResourceStates.PixelShaderResource,
@@ -172,7 +172,7 @@ public static unsafe class D3D12ResourceUtils
             generateMips = resourceUpload.IsSupportedForGenerateMips(format);
             if (generateMips)
             {
-                mipLevels = (ushort)Utilities.CountMips((uint)width, (uint)height);
+                mipLevels = (ushort)Utilities.CountMips(width, height);
             }
         }
 
@@ -180,18 +180,18 @@ public static unsafe class D3D12ResourceUtils
         ID3D12Resource texture = device.CreateCommittedResource(
             HeapType.Default,
             HeapFlags.None,
-            ResourceDescription.Texture2D(format, (uint)width, (uint)height, 1, mipLevels, 1, 0, flags),
+            ResourceDescription.Texture2D(format, width, height, 1, mipLevels, 1, 0, flags),
             c_initialCopyTargetState
         );
 
         fixed (T* dataPtr = data)
         {
-            FormatHelper.GetSurfaceInfo(format, width, height, out int rowPitch, out int slicePitch);
+            FormatHelper.GetSurfaceInfo(format, width, height, out uint rowPitch, out uint slicePitch);
             SubresourceData initData = new()
             {
-                Data = (nint)dataPtr,
-                RowPitch = rowPitch,
-                SlicePitch = slicePitch
+                pData = dataPtr,
+                RowPitch = (nint)rowPitch,
+                SlicePitch = (nint)slicePitch
             };
 
             resourceUpload.Upload(texture, 0, &initData, 1);

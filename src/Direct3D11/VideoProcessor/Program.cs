@@ -133,10 +133,10 @@ foreach (VideoProcessorAutoStreamCaps cap in Enum.GetValues(typeof(VideoProcesso
     WriteLine($"{cap.ToString().PadRight(25, ' ')} {((vpCaps.AutoStreamCaps & cap) != 0 ? "yes" : "no")}");
 }
 
-int bobRate = -1;
-int lastRate = -1;
+uint bobRate = ~0u;
+uint lastRate = ~0u;
 
-for (int i = 0; i < vpCaps.RateConversionCapsCount; i++)
+for (uint i = 0; i < vpCaps.RateConversionCapsCount; i++)
 {
     WriteLine($"\n[Video Processor Rate Conversion Caps #{i + 1}]");
 
@@ -156,12 +156,12 @@ for (int i = 0; i < vpCaps.RateConversionCapsCount; i++)
     lastRate = i;
 }
 
-if (bobRate == -1)
+if (bobRate == ~0u)
 {
     WriteLine("DeinterlaceBob not found");
 }
 
-int usedRate = bobRate == -1 ? lastRate : bobRate;
+uint usedRate = bobRate == ~0u ? lastRate : bobRate;
 result = videoDevice.CreateVideoProcessor(videoProcessorEnumerator1, usedRate, out videoProcessor);
 WriteLine($"\n=====================================================");
 if (!result.Success)
@@ -170,7 +170,7 @@ if (!result.Success)
 }
 else
 {
-    WriteLine($"D3D11 Video Processor created successfully {(bobRate != -1 ? "[bob method]" : "")}");
+    WriteLine($"D3D11 Video Processor created successfully {(bobRate != ~0u ? "[bob method]" : "")}");
     videoProcessor.Dispose();
 }
 
