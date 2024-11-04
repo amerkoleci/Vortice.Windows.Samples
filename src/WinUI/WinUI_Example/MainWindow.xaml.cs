@@ -57,12 +57,12 @@ namespace WinUI_Example
             protected override void Initialize()
             {
                 ReadOnlySpan<VertexPositionTexture> source =
-        [
-            new VertexPositionTexture(new Vector3(-0.5f, 0.5f, 0.0f), new Vector2(0, 0)),
-            new VertexPositionTexture(new Vector3(0.5f, 0.5f, 0.0f), new Vector2(1, 0)),
-            new VertexPositionTexture(new Vector3(0.5f, -0.5f, 0.0f), new Vector2(1, 1)),
-            new VertexPositionTexture(new Vector3(-0.5f, -0.5f, 0.0f), new Vector2(0, 1))
-        ];
+                [
+                    new VertexPositionTexture(new Vector3(-0.5f, 0.5f, 0.0f), new Vector2(0, 0)),
+                    new VertexPositionTexture(new Vector3(0.5f, 0.5f, 0.0f), new Vector2(1, 0)),
+                    new VertexPositionTexture(new Vector3(0.5f, -0.5f, 0.0f), new Vector2(1, 1)),
+                    new VertexPositionTexture(new Vector3(-0.5f, -0.5f, 0.0f), new Vector2(0, 1))
+                ];
 
                 _vertexBuffer = Device.CreateBuffer(source, BindFlags.VertexBuffer);
 
