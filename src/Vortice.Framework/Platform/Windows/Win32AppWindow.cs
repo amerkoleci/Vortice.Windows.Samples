@@ -45,7 +45,7 @@ public sealed unsafe class Win32AppWindow : AppWindow
 
         // TODO: Change to CreateWindowExW(WS_EX_TOPMOST, L"$
 
-        if (_hwnd.Value == IntPtr.Zero)
+        if (_hwnd.Value == null)
         {
             throw new InvalidOperationException(
                     $"Failed to create window class. Error: {Marshal.GetLastWin32Error()}"
